@@ -6,3 +6,10 @@
 	path = downward
 	url = https://github.com/aymeric75/downward-R-latplan.git
 
+[submodule "pddlgym"]
+	path = r_latplan_datasets/pddlgym/
+	url = https://github.com/aymeric75/pddlgym.git
+
+[submodule "r_latplan_datasets/pddlgym"]
+	path = r_latplan_datasets/pddlgym
+	url = https://github.com/aymeric75/pddlgym.git

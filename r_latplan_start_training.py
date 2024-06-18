@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+import sys
+import subprocess
+
+def switch_conda_environment(env_name):
+    subprocess.run(f"conda activate {env_name}", shell=True)
+    print(f"Switched to conda environment: {env_name}")
+
+
+parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
+parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
+parser.add_argument('dataset_folder', type=str, help='folder where the images are')
+
+
+args = parser.parse_args()
+
+
+
+##########   RULES   ############
+
+# IF partial
+#   
+#       create X different datasets (each time with one node remove)
+
+# 
+
+
+
+
+
+dico_blocks = {
+    "task": "blocks",
+    "type": "cylinders-4-flat",
+    "width_height": "",
+    "nb_examples": "20000",
+    "conf_folder": ""
+
+}
+
+
+dico_sokoban = {
+    "task": "sokoban",
+    "type": "sokoban_image-20000-global-global-2-train",
+    "width_height": "",
+    "nb_examples": "20000",
+    "conf_folder": ""
+}
+
+dico_hanoi = {
+    "task": "hanoi",
+    "type": "",
+    "width_height": "4 4",
+    "nb_examples": "5000",
+    "conf_folder": ""
+}
+
+
+
+
+## create the subfolder of a particular experiment
+
+if not os.path.exists("r_latplan_exps/"+args.domain+"/"+args.dataset_folder):
+    os.makedirs("r_latplan_exps/"+args.domain+"/"+args.dataset_folder) 
+
+exp_folder = "r_latplan_exps/"+args.domain+"/"+args.dataset_folder
+
+
+dico_ = None
+
+if args.domain == "sokoban":
+    dico_ = dico_sokoban
+elif args.domain == "blocks":
+    dico_ = dico_blocks
+elif args.domain == "hanoi":
+    dico_ = dico_hanoi
+
+
+script_path = './train_kltune.py'
+
+
+args_dict = {
+    "learn": None,
+    dico_["task"]: None,
+    #dico_["type"]: None,
+    dico_["width_height"]: None,
+    dico_["nb_examples"]: None,
+    "CubeSpaceAE_AMA4Conv": None,
+    "kltune2": None,
+    "--dataset_folder": args.dataset_folder,
+}
+
+# Convert the dictionary to a list of arguments
+args_list = []
+args_list_str = ""
+for key, value in args_dict.items():
+    args_list.append(key)
+    args_list_str += str(key)+" "
+    if value is not None:
+        args_list.append(value)
+        args_list_str += str(value)+" "
+
+
+print(args_list_str)
+
+# learn hanoi  4 4 5000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA2
+
+
+outfile_str = "/workspace/R-latplan/r_latplan_exps/" + args.domain  + "/" + args.dataset_folder + "/file.out"
+errfile_str = "/workspace/R-latplan/r_latplan_exps/" + args.domain  + "/" + args.dataset_folder + "/file.err"
+
+
+
+#result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
+
+with open(outfile_str, "w") as outfile, open(errfile_str, "w") as errfile:
+
+    result = subprocess.run('/workspace/R-latplan/train_kltune.py ' + args_list_str, shell = True, check = True, capture_output=False, stdout = outfile, stderr = errfile)
+
