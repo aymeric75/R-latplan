@@ -14,6 +14,7 @@ learn/events*
 /mnist_model/
 *.bin
 *.lprof
+*.tar
 /samples/table
 samples*/
 problem-instances/*/
