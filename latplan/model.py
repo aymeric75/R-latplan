@@ -478,11 +478,18 @@ class TransitionWrapper:
         pass
 
     def adaptively(self, fn, data, *args, **kwargs):
+        # print("fnn")
+        # print(fn)
+        # print(data)
+        # print(args)
+        # exit()
         try:
             return fn(data,*args,**kwargs)
         except ValueError:
             # not transitions
+            #return fn(data,*args,**kwargs)[:,0]
             return fn(np.expand_dims(data,1).repeat(2, axis=1),*args,**kwargs)[:,0]
+            
 
     def encode(self, data, *args, **kwargs):
         return self.adaptively(super().encode, data, *args, **kwargs)
@@ -533,6 +540,8 @@ class TransitionWrapper:
         return
 
     def dump_actions(self,transitions,**kwargs):
+        print("la0")
+        exit()
         """Since TransitionWrapper may not have action discovery (AAE), it just saves a set of concatenated transitions"""
         transitions_z = self.encode(transitions,**kwargs)
         pre = transitions_z[:,0,...]
@@ -571,19 +580,35 @@ class BaseActionMixin:
         self.metrics.append(direct)
         return dummy(pred)
 
-    def _dump_actions_prologue(self,pre,suc,**kwargs):
+    def _dump_actions_prologue(self,actions,pre,suc,**kwargs):
         """Compute and return a matrix, whose each row is a one-hot vector.
 It contans only as many rows as the available actions. Unused actions are removed."""
         N=pre.shape[1]
-        data = np.concatenate([pre,suc],axis=1)
-        actions = self.encode_action([pre,suc], **kwargs).round()
-
+        data = np.concatenate([pre,suc],axis=1) 
+        #actions = self.encode_action([pre,suc], **kwargs).round()
+        actions = np.expand_dims(actions, axis=1)
+        print("actions.shape") # (2904, 1, 1453)
+        print(actions.shape)
+        print(actions[:4])
+        print()
+        print(actions[-4:])
+        print("la")
+        print(len(actions[0]))
+        print(len(actions[0][0]))
         histogram = np.squeeze(actions.sum(axis=0,dtype=int))
+        print("histogram")
         print(histogram)
         true_num_actions = np.count_nonzero(histogram)
+        #true_num_actions = 352
+        print("true_num_actions")
         print(true_num_actions)
         all_labels = np.zeros((true_num_actions, actions.shape[1], actions.shape[2]), dtype=int)
         action_ids = np.where(histogram > 0)[0]
+        print("len(action_ids)")
+        print(len(action_ids))
+
+
+        #action_ids = np.where(histogram >= 0)[0]
         for i, a in enumerate(action_ids):
             all_labels[i][0][a] = 1
 
@@ -597,11 +622,16 @@ It contans only as many rows as the available actions. Unused actions are remove
         pass
     def dump_preconditions(self, pre, suc, data, actions, histogram, true_num_actions, all_labels, action_ids):
         pass
-    def dump_actions(self,transitions,**kwargs):
-        transitions_z = self.encode(transitions,**kwargs)
+    def dump_actions(self, transitions, **kwargs):
+        print("la1")
+
+        print(np.array(transitions[0]).shape) # (2408, 2, 25, 70, 3)
+        print(np.array(transitions[1]).shape) # (2408, 15)
+        
+        transitions_z = self.encode(np.array(transitions[0]),**kwargs)
         pre = transitions_z[:,0,...]
         suc = transitions_z[:,1,...]
-        pre, suc, data, actions, histogram, true_num_actions, all_labels, action_ids = self._dump_actions_prologue(pre,suc,**kwargs)
+        pre, suc, data, actions, histogram, true_num_actions, all_labels, action_ids = self._dump_actions_prologue(transitions[1], pre,suc,**kwargs)
         self.save_array("available_actions.csv", action_ids)
         self.dump_effects      (pre, suc, data, actions, histogram, true_num_actions, all_labels, action_ids, **kwargs)
         self.dump_preconditions(pre, suc, data, actions, histogram, true_num_actions, all_labels, action_ids, **kwargs)
@@ -788,6 +818,8 @@ It overwrites dump_actions because effects/preconditions must be learned separat
         return z_suc_aae
 
     def dump_actions(self,transitions,**kwargs):
+        print("la2")
+        exit()
         transitions_z = self.encode(transitions,**kwargs)
         pre = transitions_z[:,0,...]
         suc = transitions_z[:,1,...]
@@ -1403,14 +1435,17 @@ class BaseActionMixinAMA3Plus(UnidirectionalMixin, BaseActionMixin):
 # AMA4+ Space AE : Bidirectional model with correct ELBO #######################
 
 class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
-    def _save(self,path=""):
+    def _save(self, path="", epoch=None, lowest_elbo=None):
         # saved separately so that we can switch between loading or not loading it.
         # since the weights are fixed size, loading it with a different input shape causes an error.
-        super()._save(path)
+        super()._save(path, epoch=epoch, lowest_elbo=lowest_elbo)
         print("saving additional networks")
         import os.path
-        np.savez_compressed(self.local(os.path.join(path,f"p_a_z0_net.npz")),*self.p_a_z0_net[0].get_weights())
-        np.savez_compressed(self.local(os.path.join(path,f"p_a_z1_net.npz")),*self.p_a_z1_net[0].get_weights())
+
+        #       
+        # path+"p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz"
+        np.savez_compressed(path+"/p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z0_net[0].get_weights())
+        np.savez_compressed(path+"/p_a_z1_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z1_net[0].get_weights())
 
     def _load(self,path=""):
         # loaded separately so that we can switch between loading or not loading it.
@@ -1459,9 +1494,54 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         # self.callbacks.append(LambdaCallback(on_epoch_begin = update_dynamics_training_flag))
         super()._build_around(input_shape)
 
+
+
+    # loss between an existing action (logit_q ?) and 
+    def SpecificLoss(self,logit_q,logit_p=None,p=None):
+        # logit_q is the output of the GS (the action vector of size 6000 ?)
+        q = K.softmax(logit_q)
+        q = K.clip(q,1e-5,1-1e-5) # avoid nan in log
+        q = q / K.sum(q,axis=-1,keepdims=True) # ensure sum is 1
+        log_q = K.log(q)
+        if (logit_p is None) and (p is None):
+            # p = 1 / self.M
+            # log_p = K.log(1/self.M)
+            # loss = q * (log_q - log_p)
+            # loss = K.sum(loss, axis=-1)
+            # sum (q*logq - qlogp) = sum (q*logq) - sum (q*(-logM)) = sum qlogq + sum q logM = sum qlogq + 1*logM
+            loss = K.sum(q * log_q, axis=-1) + K.log(K.cast(self.parameters["A"], "float"))
+        elif logit_p is not None:
+            s = K.shape(logit_p)
+            logit_p = wrap(logit_p, K.reshape(logit_p, (s[0], 1, self.parameters["A"])))
+            p = K.softmax(logit_p)
+            p = K.clip(p,1e-5,1-1e-5) # avoid nan in log
+            p = p / K.sum(p,axis=-1,keepdims=True) # ensure sum is 1
+            log_p = K.log(p)
+            loss = q * (log_q - log_p)
+            loss = K.sum(loss, axis=-1)
+        elif p is not None:
+            p = K.clip(p,1e-5,1-1e-5) # avoid nan in log
+            # p = p / K.sum(p,axis=-1,keepdims=True) # ensure sum is 1
+            log_p = K.log(p)
+            loss = q * (log_q - log_p)
+            loss = K.sum(loss, axis=-1)
+        else:
+            raise Exception("what??")
+
+        # sum across dimensions
+        loss = K.batch_flatten(loss)
+        loss = K.sum(loss, axis=-1)
+        return loss
+
+
+
+
     def _build_primary(self,input_shape):
 
         x = Input(shape=(2,*input_shape))
+        action_input = Input(shape=(self.parameters["A"],)) # shape is # (? ,24)
+
+
         _, x_pre, x_suc = dapply(x)
         z, z_pre, z_suc = dapply(x, self._encode)
         y, y_pre, y_suc = dapply(z, self._decode)
@@ -1471,7 +1551,7 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         p_pre = wrap(l_pre, K.sigmoid(l_pre))
         p_suc = wrap(l_suc, K.sigmoid(l_suc))
         # note: _action takes a probability, but feeding 0/1 data in test time is fine (0/1 can be seen as probabilities)
-        action    = self._action (p_pre,p_suc)
+        action    = action_input
         z_suc_aae = self._apply  (z_pre,action)
         z_pre_aae = self._regress(z_suc,action)
         y_suc_aae = self._decode(z_suc_aae)
@@ -1479,7 +1559,7 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         z_aae = dmerge(z_pre_aae, z_suc_aae)
         y_aae = dmerge(y_pre_aae, y_suc_aae)
 
-        (l_action,  ), _ = action.variational_source # see Variational class
+        #(l_action,  ), _ = action.variational_source # see Variational class
         (l_suc_aae, ), _ = z_suc_aae.variational_source # see Variational class
         (l_pre_aae, ), _ = z_pre_aae.variational_source # see Variational class
 
@@ -1488,6 +1568,8 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         p_suc_aae = wrap(l_suc_aae, K.sigmoid(l_suc_aae))
         p_aae     = dmerge(p_pre_aae, p_suc_aae)
 
+
+
         pdiff_z1z2 = K.mean(K.abs(p_suc - p_suc_aae),axis=-1)
         pdiff_z0z3 = K.mean(K.abs(p_pre - p_pre_aae),axis=-1)
         pdiff_z0z1 = K.mean(K.abs(p_pre - p_suc),axis=-1)
@@ -1495,8 +1577,16 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
 
         kl_z0 = z_pre.loss(l_pre, p=self.parameters["zerosuppress"])
         kl_z1 = z_suc.loss(l_suc, p=self.parameters["zerosuppress"])
-        kl_a_z0 = action.loss(l_action, logit_p=Sequential(self.p_a_z0_net)(z_pre))
-        kl_a_z1 = action.loss(l_action, logit_p=Sequential(self.p_a_z1_net)(z_suc))
+        
+        # kl_a_z0 = action.loss(l_action, logit_p=Sequential(self.p_a_z0_net)(z_pre))
+        # kl_a_z1 = action.loss(l_action, logit_p=Sequential(self.p_a_z1_net)(z_suc))
+        
+
+        kl_a_z0 = self.SpecificLoss(action_input, logit_p=Sequential(self.p_a_z0_net)(z_pre))
+        kl_a_z1 = self.SpecificLoss(action_input, logit_p=Sequential(self.p_a_z1_net)(z_suc))
+
+
+        
         kl_z1z2 = z_pre_aae.loss(l_pre, logit_p=l_pre_aae)
         kl_z0z3 = z_suc_aae.loss(l_suc, logit_p=l_suc_aae)
         _rec = self.output.loss
@@ -1504,14 +1594,24 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         x1y1 = _rec(x_suc,y_suc)
         x0y3 = _rec(x_pre,y_pre_aae)
         x1y2 = _rec(x_suc,y_suc_aae)
-        ama3_forward_loss1  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + self.parameters["beta_d"] * kl_z1z2 + x1y1
-        ama3_forward_loss2  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + x1y2
-        ama3_backward_loss1 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + self.parameters["beta_d"] * kl_z0z3 + x0y0
-        ama3_backward_loss2 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + x0y3
+
+        #self.parameters["pdiff_z1z2_z0z3"] = [ 1, 1000 ]
+
+        self.parameters["beta_a_recons"] = 1
+
+        self.parameters["beta_z"], self.parameters["beta_d"] = self.parameters["beta_z_and_beta_d"]
+
+        ama3_forward_loss1  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + self.parameters["beta_d"] * kl_z1z2 + x1y1 + pdiff_z1z2*self.parameters["pdiff_z1z2_z0z3"]
+        ama3_forward_loss2  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + self.parameters["beta_a_recons"] * x1y2
+        ama3_backward_loss1 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + self.parameters["beta_d"] * kl_z0z3 + x0y0 + pdiff_z0z3*self.parameters["pdiff_z1z2_z0z3"]
+        ama3_backward_loss2 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + self.parameters["beta_a_recons"] * x0y3
         total_loss = (ama3_forward_loss1 + ama3_forward_loss2 + ama3_backward_loss1 + ama3_backward_loss2)/4 
-        ama3_forward_elbo1  = kl_z0 + x0y0 + kl_a_z0 + kl_z1z2 + x1y1
+
+
+
+        ama3_forward_elbo1  = kl_z0 + x0y0 + kl_a_z0 + kl_z1z2 + x1y1 + pdiff_z1z2
         ama3_forward_elbo2  = kl_z0 + x0y0 + kl_a_z0 + x1y2
-        ama3_backward_elbo1 = kl_z1 + x1y1 + kl_a_z1 + kl_z0z3 + x0y0
+        ama3_backward_elbo1 = kl_z1 + x1y1 + kl_a_z1 + kl_z0z3 + x0y0 + pdiff_z0z3
         ama3_backward_elbo2 = kl_z1 + x1y1 + kl_a_z1 + x0y3
         elbo = (ama3_forward_elbo1 + ama3_forward_elbo2 + ama3_backward_elbo1 + ama3_backward_elbo2)/4
         self.add_metric("pdiff_z1z2",pdiff_z1z2)
@@ -1534,7 +1634,8 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         self.loss = loss
 
         # note: original z does not work because Model.save only saves the weights that are included in the computation graph between input and output.
-        self.net = Model(x, y_aae)
+        self.net = Model(inputs=[x, action_input], outputs=y_aae)
+
         self.encoder     = Model(x, z) # note : directly through the encoder, not AAE
         self.autoencoder = Model(x, y) # note : directly through the decoder, not AAE
 
@@ -1542,9 +1643,9 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         # print(self.net.weights)
         # print(self.autoencoder.weights)
 
-        # for plotting
-        self._encode_prob     = Model(x, p) # note : directly through the encoder, not AAE
-        self._encode_prob_aae = Model(x, p_aae) # note : directly through the encoder, not AAE
+        # # for plotting
+        # self._encode_prob     = Model(x, p) # note : directly through the encoder, not AAE
+        # self._encode_prob_aae = Model(x, p_aae) # note : directly through the encoder, not AAE
 
         return
 

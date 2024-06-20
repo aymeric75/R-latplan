@@ -1,0 +1,183 @@
+{
+  "relationships": {
+    "behind": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "front": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "right": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "left": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  "directions": {
+    "front": [
+      -0.0,
+      -0.9999999403953552,
+      -0.0
+    ],
+    "behind": [
+      0.0,
+      0.9999999403953552,
+      0.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ],
+    "right": [
+      1.0,
+      -0.0,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "left": [
+      -1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "image_filename": "goal.png",
+  "objects": [
+    {
+      "pixel_coords": [
+        75,
+        31,
+        15.928669929504395
+      ],
+      "id": 0,
+      "location": [
+        0.0,
+        0,
+        4.9
+      ],
+      "material": "Rubber",
+      "color": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "stackable": true,
+      "rotation": 205.63099750254923,
+      "bbox": [
+        67.0,
+        23.0,
+        83.0,
+        39.0
+      ],
+      "shape": "SmoothCylinder",
+      "size": 0.7
+    },
+    {
+      "pixel_coords": [
+        75,
+        59,
+        16.444677352905273
+      ],
+      "id": 1,
+      "location": [
+        0.0,
+        0,
+        2.0999999999999996
+      ],
+      "material": "Rubber",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "stackable": true,
+      "rotation": 243.87513905892118,
+      "bbox": [
+        68.0,
+        51.0,
+        82.0,
+        68.0
+      ],
+      "shape": "SmoothCylinder",
+      "size": 0.7
+    },
+    {
+      "pixel_coords": [
+        75,
+        45,
+        16.186674118041992
+      ],
+      "id": 2,
+      "location": [
+        0.0,
+        0,
+        3.5
+      ],
+      "material": "Rubber",
+      "color": [
+        1.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "stackable": true,
+      "rotation": 160.0620587224034,
+      "bbox": [
+        68.0,
+        37.0,
+        82.0,
+        53.0
+      ],
+      "shape": "SmoothCylinder",
+      "size": 0.7
+    },
+    {
+      "pixel_coords": [
+        75,
+        72,
+        16.702682495117188
+      ],
+      "id": 3,
+      "location": [
+        0.0,
+        0,
+        0.7
+      ],
+      "material": "Rubber",
+      "color": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "stackable": true,
+      "rotation": 17.504695256140224,
+      "bbox": [
+        68.0,
+        64.0,
+        82.0,
+        81.0
+      ],
+      "shape": "SmoothCylinder",
+      "size": 0.7
+    }
+  ]
+}

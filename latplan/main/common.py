@@ -5,8 +5,12 @@ import glob
 import numpy as np
 import latplan.model
 import latplan.util.stacktrace
-from latplan.util.tuning import simple_genetic_search, parameters, nn_task, reproduce
+from latplan.util.tuning import simple_genetic_search, parameters, nn_task, reproduce, load_history
 from latplan.util        import curry
+import sys
+import json
+import random
+
 
 ################################################################
 # globals
@@ -33,10 +37,11 @@ parser.add_argument(
         "A string which contains mode substrings."
         "\nRecognized modes are:"
         "\n" 
-        "\n   learn     : perform the training with a hyperparameter tuner. Results are stored in logs/."
-        "\n   plot      : load the weights of the current best hyperparameter and produce visualizations"
-        "\n   dump      : dump csv files necessary for producing PDDL models"
-        "\n   summary   : perform extensive evaluations and collect the statistics, store the result in performance.json"
+        "\n   learn     : perform the training with a hyperparameter tuner. Results are stored in samples/[experiment]/logs/[hyperparameter]."
+        "\n               If 'learn' is not specified, it attempts to load the stored weights."
+        "\n   plot      : produce visualizations"
+        "\n   dump      : dump the csv files necessary for producing the PDDL models"
+        "\n   summary   : perform extensive performance evaluations and collect the statistics, store the result in performance.json"
         "\n   debug     : debug training limited to epoch=2, batch_size=100. dataset is truncated to 200 samples"
         "\n   reproduce : train the best hyperparameter so far three times with different random seeds. store the best results."
         "\n   iterate   : iterate plot/dump/summary commands above over all hyperparmeters that are already trained and stored in logs/ directory."
@@ -94,8 +99,28 @@ def add_common_arguments(subparser,task,objs=False):
                            nargs='?',
                            default="",
                            help="A string which is appended to the directory name to label each experiment.")
+    
+
+
+
+    subparser.add_argument("--dataset_folder",
+                           nargs='?',
+                           default="",
+                           help="folder path of where the images are")
+
+    
+    
     return
 
+
+
+
+def load_dataset(path_to_file):
+    import pickle
+    # Load data.
+    with open(path_to_file, mode="rb") as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
 
 
 def main(parameters={}):
@@ -106,10 +131,34 @@ def main(parameters={}):
     global args, sae_path
     args = parser.parse_args()
     task = args.task
+
     delattr(args,"task")
-    print(vars(args))
     latplan.util.tuning.parameters.update(vars(args))
-    sae_path = "_".join(sys.argv[2:])
+
+    print("'sys.argvsys.argvsys.argv")
+    print(sys.argv[2])
+
+    if(sys.argv[2]=="puzzle"):
+        sae_path = "_".join(sys.argv[2:9])
+    if(sys.argv[2]=="blocks"):
+        sae_path = "_".join(sys.argv[2:7])
+    if(sys.argv[2]=="lightsout"):
+        sae_path = "_".join(sys.argv[2:8])
+    if(sys.argv[2]=="sokoban"):
+        sae_path = "_".join(sys.argv[2:7])
+    if(sys.argv[2]=="hanoi"):
+        sae_path = "_".join(sys.argv[2:7])
+
+
+    
+    print(vars(args))
+    # latplan.util.tuning.parameters.update(vars(args))
+    # sae_path = "_".join(sys.argv[2:])
+
+    print("SAE PATH")
+    print(sae_path)
+
+
     try:
         task(args)
     except:
@@ -205,6 +254,82 @@ def train_val_test_split(x):
 def run(path,transitions,extra=None):
     train, val, test = train_val_test_split(transitions)
 
+    path_to_json = "path_to_json"
+    if(args.dataset_folder != ""):
+        path_to_json = "r_latplan_datasets/"+sys.argv[2]+"/"
+        #path_to_json = os.path.join(path+"/logs/"+args.dataset_folder)
+
+    print("pathpathpathpath")
+    print(path)
+    path = path_to_json
+    
+    # 
+    path_to_dataset = path_to_json+args.dataset_folder+"/data.p"
+
+    loaded_data = load_dataset(path_to_dataset)
+        
+    train_set = loaded_data["train_set"] 
+    test_val_set = loaded_data["test_val_set"] 
+    all_pairs_of_images_reduced_orig = loaded_data["all_pairs_of_images_reduced_orig"] 
+    all_actions_one_hot = loaded_data["all_actions_one_hot"]
+    mean_all = loaded_data["mean_all"] 
+    std_all = loaded_data["std_all"] 
+    all_actions_unique = loaded_data["all_actions_unique"] 
+    orig_max = loaded_data["orig_max"] 
+    orig_min = loaded_data["orig_min"] 
+
+
+    print("OLAAAAAA")
+    print(os.path.join(path_to_json,"aux.json"))
+
+    # Step 1: Load the JSON file
+    if os.path.isfile(os.path.join(path_to_json,"aux.json")):
+        with open(os.path.join(path_to_json,"aux.json"),"r") as f:
+            data = json.load(f)
+
+
+
+    # Step 2: Replace 'mean' and 'std' in the dictionary
+    data['parameters']['mean'] = mean_all.tolist()
+    data['parameters']['std'] = std_all.tolist()
+
+    data['parameters']['orig_max'] = orig_max
+    data['parameters']['orig_min'] = orig_min
+    data["parameters"]["time_start"] = ""
+    data['parameters']['A'] = len(all_actions_unique)
+
+    aaa = [2]
+    aaa.extend(train_set[0][0][0].shape)
+    data["input_shape"] = aaa
+
+
+    # Step 3: Write the modified dictionary back to the JSON file
+    #if os.path.isfile(os.path.join(path_to_json+args.dataset_folder,"aux.json")):
+    with open(os.path.join(path_to_json+args.dataset_folder,"aux.json"),"w") as f:
+        json.dump(data, f, indent=4)
+
+    # from genHanoi import return_hanoi_transitions_and_actions
+    # transitions, actions_transitions, semi_loose_actions, mean_to_use, std_to_use = return_hanoi_transitions_and_actions(args, parameters, version="with_loose_pddl_desc") #  with_pddl_constraints
+
+
+    with open(os.path.join(path_to_json+args.dataset_folder,"aux.json"),"r") as f:
+        parameters = json.load(f)["parameters"]
+
+    # else:
+    #     parameters = {}
+
+
+
+
+    parameters["mean"] = mean_all
+    parameters["std"] = std_all
+
+    val_set = test_val_set[:len(test_val_set)//2]
+
+    random.shuffle(val_set)
+
+
+
     def postprocess(ae):
         show_summary(ae, train, test)
         plot_autoencoding_image(ae,train,"train")
@@ -224,17 +349,37 @@ def run(path,transitions,extra=None):
 
 
     if 'learn' in args.mode:
-        simple_genetic_search(
-            curry(nn_task, latplan.model.get(parameters["aeclass"]),
-                  path,
-                  train, train, val, val), # noise data is used for tuning metric
-            parameters,
-            path,
-            limit              = 100,
-            initial_population = 100,
-            population         = 100,
-            report             = report,
-        )
+
+
+        parameters["epoch"] = 5000
+
+        parameters["load_sae_weights"] = False
+        
+        parameters["use_wandb"] = True
+
+
+        # train_set = [train_set[0]]
+        # val_set = [val_set[0]]
+        the_exp_path = "r_latplan_exps/"+sys.argv[2]+"/"+args.dataset_folder
+        parameters["the_exp_path"] = the_exp_path
+        parameters["beta_z_and_beta_d"] = [10, 1000]
+        parameters["N"] = 300
+        parameters["pdiff_z1z2_z0z3"] = 0
+        path = path_to_json
+        task = curry(nn_task, latplan.model.get(parameters["aeclass"]), the_exp_path, train_set, train_set, val_set, val_set, parameters, False) 
+        task()
+
+        # simple_genetic_search(
+        #     curry(nn_task, latplan.model.get(parameters["aeclass"]),
+        #           path,
+        #           train, train, val, val), # noise data is used for tuning metric
+        #     parameters,
+        #     path,
+        #     limit              = 100,
+        #     initial_population = 100,
+        #     population         = 100,
+        #     report             = report,
+        # )
 
     if 'resume' in args.mode:
         simple_genetic_search(
@@ -247,7 +392,7 @@ def run(path,transitions,extra=None):
             report             = report,
         )
 
-    elif 'debug' in args.mode:
+    if 'debug' in args.mode:
         print("debug run. removing past logs...")
         for _path in glob.glob(os.path.join(path,"*")):
             if os.path.isfile(_path):
@@ -267,7 +412,7 @@ def run(path,transitions,extra=None):
             report             = report,
         )
 
-    elif 'reproduce' in args.mode:   # reproduce the best result from the grid search log
+    if 'reproduce' in args.mode:   # reproduce the best result from the grid search log
         reproduce(
             curry(nn_task, latplan.model.get(parameters["aeclass"]),
                   path,
@@ -277,9 +422,14 @@ def run(path,transitions,extra=None):
         )
 
     if 'iterate' in args.mode:
-        wild = os.path.join(path,"logs","*")
-        print(f"iterating mode {args.mode} for all weights stored under {wild}")
-        for path in glob.glob(wild):
+        open_list, _ = load_history(path)
+        topk = open_list[:10]
+        topk_dirnames = [
+            os.path.join(path,"logs",elem[1]["hash"])
+            for elem in topk
+        ]
+        print(f"iterating mode {args.mode} for all weights stored under logs")
+        for path in topk_dirnames:
             postprocess(latplan.model.load(path))
 
 

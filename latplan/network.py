@@ -10,7 +10,9 @@ from .util           import ensure_list, NpEncoder, curry
 from .util.tuning    import InvalidHyperparameterError
 from .util.layers    import LinearSchedule
 import os.path
-
+import random
+import matplotlib.pyplot as plt
+import wandb
 # modified version
 import progressbar
 class DynamicMessage(progressbar.DynamicMessage):
@@ -20,6 +22,7 @@ class DynamicMessage(progressbar.DynamicMessage):
             return '{}'.format(val)
         else:
             return 6 * '-'
+
 
 
 class Network:
@@ -158,30 +161,44 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 into a full path."""
         return os.path.join(self.path,path)
 
-    def save(self,path=""):
-        """An interface for saving a network.
-Users should not overload this method; Define _save() for each subclass instead.
-This function calls _save bottom-up from the least specialized class.
-Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around methods."""
-        print("Saving the network to {}".format(self.local(path)))
-        os.makedirs(self.local(path),exist_ok=True)
-        self._save(path)
-        print("Network saved")
-        return self
 
-    def _save(self,path=""):
+
+    def _save(self, path="", epoch=None, lowest_elbo=None):
         """An interface for saving a network.
 Users may define a method for each subclass for adding a new save-time feature.
 Each method should call the _save() method of the superclass in turn.
 Users are not expected to call this method directly. Call save() instead.
 Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around methods."""
-        for i, net in enumerate(self.nets):
-            net.save_weights(self.local(os.path.join(path,f"net{i}.h5")))
 
-        with open(self.local(os.path.join(path,"aux.json")), "w") as f:
+
+        for i, net in enumerate(self.nets):
+            net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+"-"+str(lowest_elbo)+".h5")
+            #net.save_weights(self.local(os.path.join(path,f"net{i}-"+str(epoch)+"-"+str(lowest_elbo)+".h5")))
+
+        with open(path+"/"+"aux.json", "w") as f:
             json.dump({"parameters":self.parameters,
                        "class"     :self.__class__.__name__,
                        "input_shape":self.net.input_shape[1:]}, f , skipkeys=True, cls=NpEncoder, indent=2)
+
+
+
+
+
+
+    def save(self,path="", epoch=None, lowest_elbo=None):
+       
+        
+        """An interface for saving a network.
+Users should not overload this method; Define _save() for each subclass instead.
+This function calls _save bottom-up from the least specialized class.
+Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around methods."""
+        #print("Saving the network to {}".format(self.local(path)))
+        #os.makedirs(self.local(path),exist_ok=True)
+
+        self._save(path=path, epoch=epoch, lowest_elbo=lowest_elbo)
+        print("Network saved")
+        return self
+
 
     def save_epoch(self, freq=10, path=""):
         def fn(epoch, logs):
@@ -258,9 +275,8 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
         if not hasattr(self,"bar"):
             self.initialize_bar()
-            from colors import color
             from functools import partial
-            self.style = partial(color, fg="black", bg="white")
+            #self.style = partial(color, fg="black", bg="white")
 
         tlogs = {}
         for k in self.custom_log_functions:
@@ -275,10 +291,21 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             if k[:2] == "v_":
                 vlogs[k[2:]] = logs[k]
 
-        if (epoch % 10) == 9:
-            self.bar.update(epoch+1, status = self.style("[v] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(vlogs.items())])) + "\n")
-        else:
-            self.bar.update(epoch+1, status = "[t] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(tlogs.items())]))
+
+        #if (epoch % 10) == 9:
+        self.bar.update(epoch+1, status = "[v] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(vlogs.items())]) + "\n")
+        
+
+        # if (epoch % 10) == 9:
+        #     self.bar.update(epoch+1, status = "[v] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(vlogs.items())]) + "\n")
+        
+        #     f = open(self.path+"/val_metrics.txt", "a")
+        #     f.write( "[v] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(vlogs.items())]) )
+        #     f.write("\n")
+        #     f.close()
+
+        # else:
+        #     self.bar.update(epoch+1, status = "[t] "+"  ".join(["{} {:8.3g}".format(k,v) for k,v in sorted(tlogs.items())]))
 
     @property
     def net(self):
@@ -314,11 +341,20 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         """Main method for training.
  This method may be overloaded by the subclass into a specific training method, e.g. GAN training."""
 
+
+        lowest_elbo = 9999999999.
+        i__for_best_files = None
+
+        the_exp_path = self.parameters["the_exp_path"]
+
         if resume:
             print("resuming the training")
             self.load(allow_failure=False, path="logs/"+self.parameters["resume_from"])
         else:
-            input_shape = train_data.shape[1:]
+            #input_shape = train_data.shape[1:]
+            #input_shape = (2, 57, 158, 3)
+            input_shape = (2, 25, 70, 3)
+            image_shape = input_shape[1:]
             self.build(input_shape)
             self.build_aux(input_shape)
 
@@ -335,6 +371,8 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
         # batch size should be smaller / eq to the length of train_data
         batch_size = min(batch_size, len(train_data))
+        #batch_size = 10
+
 
         def make_optimizer(net):
             return getattr(keras.optimizers,optimizer)(
@@ -357,7 +395,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             if isinstance(thing, tuple):
                 thing = list(thing)
             if isinstance(thing, list):
-                assert len(thing) == len(self.nets)
+                #assert len(thing) == len(self.nets)
                 return thing
             else:
                 return [thing for _ in self.nets]
@@ -370,11 +408,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         plot_val_data = np.copy(val_data[0][:1])
         self.callbacks.append(
             keras.callbacks.LambdaCallback(
-                on_epoch_end = lambda epoch,logs: \
-                    self.plot_transitions(
-                        plot_val_data,
-                        self.path+"/",
-                        epoch=epoch),
+                # on_epoch_end = lambda epoch,logs: \
+                #     self.plot_transitions(
+                #         plot_val_data,
+                #         self.path+"/",
+                #         epoch=epoch),
                 on_train_end = lambda _: self.file_writer.close()))
 
         def assert_length(data):
@@ -398,7 +436,9 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             for i in range(len(subdata)//batch_size):
                 yield subdata[i*batch_size:(i+1)*batch_size]
 
-        index_array = np.arange(len(train_data[0]))
+        index_array = np.arange(len(train_data))
+
+        #print(index_array)
 
         clist = CallbackList(callbacks=self.callbacks)
         clist.set_model(self.nets[0])
@@ -413,50 +453,174 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         })
         self.nets[0].stop_training = False
 
-        def generate_logs(data,data_to):
+
+
+
+        def unnormalize_colors(normalized_images, mean, std): 
+            return (normalized_images*std)+mean
+
+
+        def deenhance(enhanced_image):
+            temp_image = enhanced_image - 0.5
+            temp_image = temp_image / 3
+            original_image = temp_image + 0.5
+            return original_image
+
+        def denormalize(normalized_image, original_min, original_max):
+            if original_max == original_min:
+                return normalized_image + original_min
+            else:
+                return (normalized_image * (original_max - original_min)) + original_min
+
+
+
+
+
+
+        def generate_logs(data, data_to, epoch=0, forwandb=False):
+
+            images_array = []
+            
+            for d in data:
+                #images_array.append(np.expand_dims(d[0], axis=-1))
+                images_array.append(d[0])
+            images_array = np.array(images_array)
+
+
+            actions_array = []
+
+            for d in data:
+                actions_array.append(d[1])
+
+            actions_array = np.array(actions_array)
+
             losses = []
             logs   = {}
-            for i, (net, subdata, subdata_to) in enumerate(zip(self.nets, data, data_to)):
-                evals = net.evaluate(subdata,
-                                     subdata_to,
-                                     batch_size=batch_size,
-                                     verbose=0)
-                logs_net = { k:v for k,v in zip(net.metrics_names, ensure_list(evals)) }
-                losses.append(logs_net["loss"])
-                logs.update(logs_net)
+            
+            # print(images_array.shape) # (4500, 2, 48, 48, 1)
+            # print(actions_array.shape) # (4500, 24)
+            
+            # NEW VERSION
+            evals = self.nets[0].evaluate([images_array, actions_array],
+                                            images_array,
+                                            batch_size=batch_size,
+                                            verbose=0)
+
+
+            preds = self.nets[0].predict([images_array, actions_array])
+            print("PREDS") # (600, 2, 48, 48, 1)
+            # (1, 2, 25, 70, 3)
+
+            print(preds.shape)
+
+            if epoch % 2 and epoch > 0:
+                iiii = 0
+                #iiii = random.randint(0, 1) # 
+                #plot_image(np.reshape(preds[iiii,1,:,:,:].squeeze(), (30, 45, 3)),"THEPREDICTION-BLOCKSWORLD.png")
+                #plot_image(np.reshape(preds[iiii,1,:,:,:].squeeze(), (48, 48)),"THEPREDICTION-PUZZ.png")
+                # (4, 16, 3) HANOI
+                #plot_image(np.reshape(preds[iiii,1,:,:,:].squeeze(), (4, 16, 3)),"THEPREDICTION-HANOI.png")
+                #theimage = np.reshape(preds[iiii,1,:,:,:].squeeze(), (56, 120, 3))
+                # 28, 60, 3.
+
+                theimage = np.reshape(preds[iiii,1,:,:,:].squeeze(), image_shape)
+
+                theimage = unnormalize_colors(np.squeeze(theimage), self.parameters["mean"], self.parameters["std"])
+                
+
+                theimage = deenhance(theimage)
+
+                theimage = denormalize(theimage, self.parameters["orig_min"], self.parameters["orig_max"])
+                
+                theimage = np.clip(theimage, 0, 1)
+                
+                plt.imsave("THEPREDICTION-NoisyPartialDFA2.png", theimage)
+
+            logs_net = { k:v for k,v in zip(self.nets[0].metrics_names, ensure_list(evals)) }
+        
+            #if forwandb:
+            to_send_towandb = logs_net
+            to_send_towandb["epoch"] = epoch
+            #wandb.log(to_send_towandb)
+
+            losses.append(logs_net["loss"])
+            logs.update(logs_net)
             if len(losses) > 2:
                 for i, loss in enumerate(losses):
                     logs["loss"+str(i)] = loss
             logs["loss"] = np.sum(losses)
             return logs
 
+
         try:
+
             clist.on_train_begin()
             logs = {}
-            for epoch in range(start_epoch,start_epoch+epoch):
+
+            for epoch in range(start_epoch, start_epoch+epoch):
                 np.random.shuffle(index_array)
                 indices_cache       = [ indices for indices in make_batch(index_array) ]
-                train_data_cache    = [[ train_subdata   [indices] for train_subdata    in train_data    ] for indices in indices_cache ]
-                train_data_to_cache = [[ train_subdata_to[indices] for train_subdata_to in train_data_to ] for indices in indices_cache ]
+
+                train_data_cache = [[train_data[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
+                train_data_to_cache = [[ train_data_to[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
+
+                batch_count=0
                 clist.on_epoch_begin(epoch,logs)
                 for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
-                    for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
-                        net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
+                    #for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
+                    #    #net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
+                    net = self.nets[0]
+
+                    #self.parameters["present_xys"] = self.parameters["x_and_ys"][batch_count]
+
+                    # print("SHAPE SUBDATA")
+                    # print(len(train_subdata_cache))
+                    # # 
+
+                    # images (each item[0] of train_subdata_cache)
+                    #x_data = np.array([np.expand_dims(item[0], axis=-1) for item in train_subdata_cache])
+                    x_data = np.array([item[0] for item in train_subdata_cache])
+
+
+                    # actions (each item[1] of train_subdata_cache)
+                    action_input_data = []
+                    for item in train_subdata_cache:
+
+                        action_input_data.append(item[1])
+
+                    action_input_data = np.array(action_input_data)
+  
+                    net.train_on_batch([x_data, action_input_data], x_data)
+                    batch_count+=1
+                
+                
                 logs = {}
-                for k,v in generate_logs(train_data, train_data_to).items():
-                    logs["t_"+k] = v
-                for k,v in generate_logs(val_data,  val_data_to).items():
+
+                for k,v in generate_logs(val_data,  val_data_to, epoch=epoch, forwandb=self.parameters["use_wandb"]).items():
                     logs["v_"+k] = v
+                    if k == "elbo":
+                        if float(v) < lowest_elbo:
+                            lowest_elbo = float(v)
+                            i_for_best_files = epoch
                 clist.on_epoch_end(epoch,logs)
                 if self.nets[0].stop_training:
                     break
+
+                if epoch > 0 and epoch % 250 == 0:
+                    print("lowest_elbolowest_elbolowest_elbolowest_elbo")
+                    print(lowest_elbo)
+
+                    self.save(path = the_exp_path, epoch=epoch, lowest_elbo=str(int(lowest_elbo)))
+
+            wandb.finish()
             clist.on_train_end()
+
 
         except KeyboardInterrupt:
             print("learning stopped\n")
         finally:
-            self.save()
+            self.save(epoch=epoch)
             self.loaded = True
         return self
 

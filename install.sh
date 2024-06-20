@@ -1,11 +1,11 @@
 #!/bin/bash
 
-git submodule update --init --recursive
+#git submodule update --init --recursive
 
-(
-    cd downward
-    ./build.py -j $(cat /proc/cpuinfo | grep -c processor) release
-)
+# (
+#     cd downward
+#     ./build.py -j $(cat /proc/cpuinfo | grep -c processor) release
+# )
 
 
 which ros || (

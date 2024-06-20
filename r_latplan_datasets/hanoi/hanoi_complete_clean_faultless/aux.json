@@ -17656,7 +17656,7 @@
         "load_sae_weights": false,
         "use_wandb": true,
         "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
-        "time_start": "fullDesc-No-Noise",
+        "time_start": "",
         "do_sweep": true,
         "orig_max": 1.0,
         "orig_min": 0.06704761904761905,

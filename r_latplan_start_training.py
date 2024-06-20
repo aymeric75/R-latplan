@@ -24,7 +24,6 @@ args = parser.parse_args()
 # IF partial
 #   
 #       create X different datasets (each time with one node remove)
-
 # 
 
 

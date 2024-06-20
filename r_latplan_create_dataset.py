@@ -21,6 +21,27 @@ parser.add_argument('erroneous', type=str, choices=['erroneous', 'faultless'], h
 args = parser.parse_args()
 
 
+# Dictionary of arguments for genDatasets.py function
+complete_bool = None
+if args.complete == "complete":
+    complete_bool = "True"
+elif args.complete == "partial":
+    complete_bool =  "False"
+
+
+clean_bool = None
+if args.clean == "clean":
+    clean_bool = "False"
+elif args.clean == "noisy":
+    clean_bool =  "True"
+
+
+erroneous_bool = None
+if args.erroneous == "erroneous":
+    erroneous_bool = "True"
+elif args.erroneous == "faultless":
+    erroneous_bool =  "False"
+
 
 ##########   RULES   ############
 
@@ -28,7 +49,6 @@ args = parser.parse_args()
 #   
 #       create X different datasets (each time with one node remove)
 
-# 
 
 
 
@@ -52,7 +72,9 @@ if not os.path.exists("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name)
 exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
 trace_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
 
-# ##########   CREATE THE TRACES OF CLEAN IMAGES  ###########
+
+
+##########   CREATE THE TRACES OF CLEAN IMAGES  ###########
 
 if args.task == "create_clean_traces":
 
@@ -81,6 +103,34 @@ if args.task == "create_exp_data":
     ###
     ###             noisy trans / not noisy trans
 
+
+
+    ####################### CREATE THE PROBLEMS DATA ###################################
+
+    # 
+    script_path_2 = './r_latplan_datasets/pddlgym/pddlgym/networkX-genGraph.py'
+
+
+
+    # Define the name of the Conda environment and the script with its arguments
+    conda_env_name = 'graphviz'
+
+    script_args = ["--domain "+str(args.domain), "--exp_folder "+str(exp_dir)]
+
+    # Construct the command to activate the Conda environment and run the script
+    #command = f'conda activate {conda_env_name} && python {script_path} {" ".join(script_args)}'
+
+    command = f'''
+    source $(conda info --base)/etc/profile.d/conda.sh
+    conda activate {conda_env_name}
+    python {script_path_2} {" ".join(script_args)}
+    '''
+
+    # Use subprocess to run the command in a shell
+    process = subprocess.Popen(command, shell=True, executable='/bin/bash')
+    process.communicate()
+
+    exit()
 
     if args.complete == "partial":
 
@@ -118,26 +168,12 @@ if args.task == "create_exp_data":
     script_path = './r_latplan_datasets/pddlgym/pddlgym/genDatasets.py'
 
 
-    # Dictionary of arguments for genDatasets.py function
-    complete_bool = None
-    if args.complete == "complete":
-        complete_bool = "True"
-    elif args.complete == "partial":
-        complete_bool =  "False"
+
+    # 
+
+    # 
 
 
-    clean_bool = None
-    if args.clean == "clean":
-        clean_bool = "False"
-    elif args.clean == "noisy":
-        clean_bool =  "True"
-
-
-    erroneous_bool = None
-    if args.erroneous == "erroneous":
-        erroneous_bool = "True"
-    elif args.erroneous == "faultless":
-        erroneous_bool =  "False"
 
 
     args_dict = {
@@ -157,8 +193,6 @@ if args.task == "create_exp_data":
             args_list.append(value)
     
     result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
-
-
 
 
 
