@@ -20,40 +20,46 @@ parser.add_argument('erroneous', type=str, choices=['erroneous', 'faultless'], h
 
 args = parser.parse_args()
 
+def bool_to_str(s):
+    if s:
+        return "True"
+    return "False"
 
-# Dictionary of arguments for genDatasets.py function
+## ALL EXPS:
+##      Exp1: complete clean faultless
+##      Exp2: complete noisy faultless
+##      Exp3: partial clean faultless
+##      Exp4: partial noisy faultless
+##      Exp5: complete noisy erroneous ("symbols" are same as Exp2)
+##      
+
+
+
+
+# Booleans for decinding the type of experiments
+
 complete_bool = None
 if args.complete == "complete":
-    complete_bool = "True"
+    complete_bool = True
 elif args.complete == "partial":
-    complete_bool =  "False"
-
+    complete_bool =  False
 
 clean_bool = None
 if args.clean == "clean":
-    clean_bool = "False"
+    clean_bool = True
 elif args.clean == "noisy":
-    clean_bool =  "True"
-
+    clean_bool =  False
 
 erroneous_bool = None
 if args.erroneous == "erroneous":
-    erroneous_bool = "True"
+    erroneous_bool = True
 elif args.erroneous == "faultless":
-    erroneous_bool =  "False"
-
-
-##########   RULES   ############
-
-# IF partial
-#   
-#       create X different datasets (each time with one node remove)
+    erroneous_bool =  False
 
 
 
 
-
-##########   CREATE THE FOLDERS  ###########
+##########   CREATE THE FOLDERS and SUBFOLDERS   ###########
 
 ### Create the "dataset" folder and the subfolder for this very dataset, if does not exist
 if not os.path.exists("r_latplan_datasets"):
@@ -67,7 +73,6 @@ if not os.path.exists("r_latplan_datasets/"+args.domain):
 dataset_folder_name = args.domain+"_"+args.complete+"_"+args.clean+"_"+args.erroneous
 if not os.path.exists("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name):
     os.makedirs("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name) 
-
 
 exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
 trace_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
@@ -96,43 +101,33 @@ if args.task == "create_clean_traces":
 
 if args.task == "create_exp_data":
 
-    ### types of exp
-    ###             partial / complete 
-    ###
-    ###             noisy / clean
-    ###
-    ###             noisy trans / not noisy trans
+
+
+    ####################### CREATE THE SYMBOLIC PROBLEMS DATA ###################################
+
+
+    if complete_bool == True:
+
+        script_path_2 = './r_latplan_datasets/pddlgym/pddlgym/networkX-genGraph.py'
+
+
+        # Define the name of the Conda environment and the script with its arguments
+        conda_env_name = 'graphviz'
+
+        script_args = ["--domain "+str(args.domain), "--exp_folder "+str(exp_dir)]
+
+        command = f'''
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate {conda_env_name}
+        python {script_path_2} {" ".join(script_args)}
+        '''
+        # Use subprocess to run the command in a shell
+        process = subprocess.Popen(command, shell=True, executable='/bin/bash')
+        process.communicate()
 
 
 
-    ####################### CREATE THE PROBLEMS DATA ###################################
-
-    # 
-    script_path_2 = './r_latplan_datasets/pddlgym/pddlgym/networkX-genGraph.py'
-
-
-
-    # Define the name of the Conda environment and the script with its arguments
-    conda_env_name = 'graphviz'
-
-    script_args = ["--domain "+str(args.domain), "--exp_folder "+str(exp_dir)]
-
-    # Construct the command to activate the Conda environment and run the script
-    #command = f'conda activate {conda_env_name} && python {script_path} {" ".join(script_args)}'
-
-    command = f'''
-    source $(conda info --base)/etc/profile.d/conda.sh
-    conda activate {conda_env_name}
-    python {script_path_2} {" ".join(script_args)}
-    '''
-
-    # Use subprocess to run the command in a shell
-    process = subprocess.Popen(command, shell=True, executable='/bin/bash')
-    process.communicate()
-
-    exit()
-
-    if args.complete == "partial":
+    else:
 
         args_dict = {
             "--domain": args.domain,
@@ -160,6 +155,8 @@ if args.task == "create_exp_data":
 
 
 
+    ############ CREATE THE IMAGES (pairs and init/goal) ###################
+
     #from r_latplan_datasets.pddlgym.pddlgym import networkX_returnTransitionsToRemove
     #switch_conda_environment("latplan")
 
@@ -169,19 +166,12 @@ if args.task == "create_exp_data":
 
 
 
-    # 
-
-    # 
-
-
-
-
     args_dict = {
         "--trace_dir": trace_dir,
         "--exp_folder": exp_dir,
         "--domain": args.domain,
-        "--remove_some_trans": complete_bool,
-        "--add_noisy_trans" : clean_bool,
+        "--remove_some_trans": not complete_bool,
+        "--add_noisy_trans" : not clean_bool,
         "--ten_percent_noisy_and_dupplicated": erroneous_bool
     }
 
@@ -190,7 +180,7 @@ if args.task == "create_exp_data":
     for key, value in args_dict.items():
         args_list.append(key)
         if value is not None:
-            args_list.append(value)
+            args_list.append(str(value))
     
     result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 

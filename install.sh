@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#git submodule update --init --recursive
+git submodule update --recursive
 
 # (
 #     cd downward
@@ -8,20 +8,20 @@
 # )
 
 
-which ros || (
-    git clone -b release https://github.com/roswell/roswell.git
-    cd roswell
-    sh bootstrap
-    ./configure
-    make
-    sudo make install
-    ros setup
-)
+# which ros || (
+#     git clone -b release https://github.com/roswell/roswell.git
+#     cd roswell
+#     sh bootstrap
+#     ./configure
+#     make
+#     sudo make install
+#     ros setup
+# )
 
-ros dynamic-space-size=8000 install numcl arrival eazy-gnuplot magicffi dataloader
+# ros dynamic-space-size=8000 install numcl arrival eazy-gnuplot magicffi dataloader
 
-make -j 1 -C lisp
+# make -j 1 -C lisp
 
-./setup.py install
+# ./setup.py install
 
-./download-dataset.sh
+# ./download-dataset.sh
