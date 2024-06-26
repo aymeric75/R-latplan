@@ -10,7 +10,7 @@ def switch_conda_environment(env_name):
     print(f"Switched to conda environment: {env_name}")
 
 
-parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
+parser = argparse.ArgumentParser(description="A script to train R-latplan for a specific experiment")
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 

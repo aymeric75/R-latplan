@@ -11,7 +11,7 @@ def switch_conda_environment(env_name):
 
 
 parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
-parser.add_argument('task', type=str, choices=['create_clean_traces', 'create_exp_data'], help='type of task to be performed')
+parser.add_argument('task', type=str, choices=['create_clean_traces', 'create_exp_data_sym', 'create_exp_data_im'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('complete', type=str, choices=['complete', 'partial'], help='completness of the dataset, i.e. if missing transitions or not')
 parser.add_argument('clean', type=str, choices=['clean', 'noisy'], help='if the dataset should be clean or noisy')
@@ -99,7 +99,7 @@ if args.task == "create_clean_traces":
 
 ##########   FILL the EXP SUBFOLDER WITH  THE PAIRS of IMAGES and the LABEL for each PAIR  (and the init/goal stuff) ###########
 
-if args.task == "create_exp_data":
+if args.task == "create_exp_data_sym":
 
 
 
@@ -153,7 +153,7 @@ if args.task == "create_exp_data":
         process.communicate()
 
 
-
+if args.task == "create_exp_data_im":
 
     ############ CREATE THE IMAGES (pairs and init/goal) ###################
 

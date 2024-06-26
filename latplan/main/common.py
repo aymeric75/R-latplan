@@ -252,20 +252,32 @@ def train_val_test_split(x):
 
 
 def run(path,transitions,extra=None):
+
+
+    #### former Vanilla Latplan code
     train, val, test = train_val_test_split(transitions)
 
-    path_to_json = "path_to_json"
-    if(args.dataset_folder != ""):
-        path_to_json = "r_latplan_datasets/"+sys.argv[2]+"/"
-        #path_to_json = os.path.join(path+"/logs/"+args.dataset_folder)
 
-    print("pathpathpathpath")
-    print(path)
-    path = path_to_json
+
+    # learning: un base_aux_json
+    #                   puis le exp_aux_json
+    #
+    #
+    #       testing depuis le exp_aux_json
+
+    # 
+    dataset_aux_json_folder_base = "r_latplan_datasets/"+sys.argv[2]
+
+    dataset_aux_json_folder_exp = "r_latplan_datasets/"+sys.argv[2] + "/" + args.dataset_folder
+
+    exp_aux_json_folder = "r_latplan_exps/" +sys.argv[2] + "/" + args.dataset_folder
+
     
     # 
-    path_to_dataset = path_to_json+args.dataset_folder+"/data.p"
+    path_to_dataset = dataset_aux_json_folder_exp +"/data.p"
 
+
+    # load dataset for the specific experiment
     loaded_data = load_dataset(path_to_dataset)
         
     train_set = loaded_data["train_set"] 
@@ -279,12 +291,9 @@ def run(path,transitions,extra=None):
     orig_min = loaded_data["orig_min"] 
 
 
-    print("OLAAAAAA")
-    print(os.path.join(path_to_json,"aux.json"))
-
-    # Step 1: Load the JSON file
-    if os.path.isfile(os.path.join(path_to_json,"aux.json")):
-        with open(os.path.join(path_to_json,"aux.json"),"r") as f:
+    # load the json file from the base domain folder (in order to update and copy/save it in the exp subfolder)
+    if os.path.isfile(os.path.join(dataset_aux_json_folder_base,"aux.json")):
+        with open(os.path.join(dataset_aux_json_folder_base,"aux.json"),"r") as f:
             data = json.load(f)
 
 
@@ -303,22 +312,18 @@ def run(path,transitions,extra=None):
     data["input_shape"] = aaa
 
 
-    # Step 3: Write the modified dictionary back to the JSON file
-    #if os.path.isfile(os.path.join(path_to_json+args.dataset_folder,"aux.json")):
-    with open(os.path.join(path_to_json+args.dataset_folder,"aux.json"),"w") as f:
+    # save the updated aux.json into the exp subfolder of the dataset folder
+    with open(os.path.join(dataset_aux_json_folder_exp,"aux.json"),"w") as f:
         json.dump(data, f, indent=4)
 
-    # from genHanoi import return_hanoi_transitions_and_actions
-    # transitions, actions_transitions, semi_loose_actions, mean_to_use, std_to_use = return_hanoi_transitions_and_actions(args, parameters, version="with_loose_pddl_desc") #  with_pddl_constraints
+    # save the updated aux.json into the exp folder (in r_latplan_exps)
+    with open(os.path.join(exp_aux_json_folder,"aux.json"),"w") as f:
+        json.dump(data, f, indent=4)
+    
 
-
-    with open(os.path.join(path_to_json+args.dataset_folder,"aux.json"),"r") as f:
+    # finally, read the saved exp aux.json (see above)
+    with open(os.path.join(dataset_aux_json_folder_exp,"aux.json"),"r") as f:
         parameters = json.load(f)["parameters"]
-
-    # else:
-    #     parameters = {}
-
-
 
 
     parameters["mean"] = mean_all
@@ -348,6 +353,48 @@ def run(path,transitions,extra=None):
         return
 
 
+
+    if 'dump' in args.mode:
+
+        # prob ici c'est que ça load 
+
+        parameters["time_start"] = ""
+
+        # beta_z_and_beta_d
+        parameters["epoch"] = 1
+
+        parameters["beta_ama_recons"] = 1
+        parameters["beta_z_and_beta_d"] = [1,1000]
+        parameters["pdiff_z1z2_z0z3"] = [1,1000]
+        print("theparameters")
+        #print(parameters)
+
+        net = latplan.model.load(exp_aux_json_folder, allow_failure=False)
+        
+        print(type(transitions)) # 
+        #print(transitions.shape) # (5000, 2, 48, 48, 1)
+        print(len(transitions))
+
+        print(np.array(transitions).shape)
+
+        thetransarray=[]
+        theactionarray=[]
+        for trr in train_set:
+            thetransarray.append(trr[0])
+            theactionarray.append(trr[1])
+
+
+        print(net) # latplan.model.ConvolutionalConcreteDetNormalizedLogitAddBidirectionalTransitionAEPlus
+
+        #dump_actions(net, [transitions, actions_transitions], name = "actions.csv", repeat=1)
+        dump_actions(net, [thetransarray, theactionarray], name = "actions.csv", repeat=1)
+
+
+
+
+
+
+
     if 'learn' in args.mode:
 
 
@@ -360,13 +407,13 @@ def run(path,transitions,extra=None):
 
         # train_set = [train_set[0]]
         # val_set = [val_set[0]]
-        the_exp_path = "r_latplan_exps/"+sys.argv[2]+"/"+args.dataset_folder
-        parameters["the_exp_path"] = the_exp_path
+
+        parameters["the_exp_path"] = exp_aux_json_folder
         parameters["beta_z_and_beta_d"] = [10, 1000]
         parameters["N"] = 300
         parameters["pdiff_z1z2_z0z3"] = 0
-        path = path_to_json
-        task = curry(nn_task, latplan.model.get(parameters["aeclass"]), the_exp_path, train_set, train_set, val_set, val_set, parameters, False) 
+
+        task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
         task()
 
         # simple_genetic_search(

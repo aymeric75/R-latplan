@@ -12,10 +12,16 @@ trap exit SIGINT
 export SHELL=/bin/bash
 ulimit -v 16000000000
 
+export repertoire=$1
+
+
 export directory=${1:-samples}
 
 run (){
     dir=$1
+    echo "lllaaaaa"
+    echo $dir/available_actions.csv
+
     lisp/ama3-domain.bin \
         $dir/available_actions.csv \
         $dir/action_add4.csv \
@@ -34,6 +40,9 @@ run (){
 
 export -f run
 
-common="parallel -j 1 --keep-order jbsub -mem 32g -cores 1 -queue x86_1h -proj pddl-ama3"
 
-$common run ::: $directory/*/logs/*/
+run $repertoire
+
+# common="parallel -j 1 --keep-order jbsub -mem 32g -cores 1 -queue x86_1h -proj pddl-ama3"
+
+# $common run ::: $directory/*/logs/*/
