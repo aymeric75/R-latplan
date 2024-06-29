@@ -58,10 +58,17 @@ float_formatter = lambda x: "%.3f" % x
 np.set_printoptions(threshold=sys.maxsize,formatter={'float_kind':float_formatter})
 
 
-def main(domainfile, problem_dir, heuristics, cycle, sigma):
+def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
+
+
+
     network_dir = os.path.dirname(domainfile)
     domainfile_rel = os.path.relpath(domainfile, network_dir)
-    
+
+
+    # print(network_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless
+    # print(domainfile_rel) # domain.pddl
+
     def domain(path):
         dom_prefix = domainfile_rel.replace("/","_")
         root, ext = os.path.splitext(path)
@@ -75,16 +82,17 @@ def main(domainfile, problem_dir, heuristics, cycle, sigma):
     log("loaded sae")
     setup_planner_utils(sae, problem_dir, network_dir, "ama3")
 
+
     p = puzzle_module(sae)
     log("loaded puzzle")
 
     log(f"loading init/goal")
-    init, goal = init_goal_misc(p,cycle,noise=sigma)
+    init, goal = init_goal_misc(p,cycle,noise=sigma, image_path=problem_dir)
     log(f"loaded init/goal")
 
     log(f"start planning")
 
-    bits = np.concatenate((init,goal))
+    bits = np.concatenate((init,goal)) 
 
     ###### files ################################################################
     ig          = problem(ama(network(domain(heur(f"problem.ig")))))

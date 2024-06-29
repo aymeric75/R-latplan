@@ -4,6 +4,7 @@ import os
 import argparse
 import sys
 import subprocess
+import shutil
 
 def switch_conda_environment(env_name):
     subprocess.run(f"conda activate {env_name}", shell=True)
@@ -74,7 +75,10 @@ dataset_folder_name = args.domain+"_"+args.complete+"_"+args.clean+"_"+args.erro
 if not os.path.exists("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name):
     os.makedirs("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name) 
 
-exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
+dataset_exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
+
+exp_exp_dir = os.getcwd()+'/'+"r_latplan_exps/"+args.domain+"/"+dataset_folder_name
+
 trace_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
 
 
@@ -114,7 +118,7 @@ if args.task == "create_exp_data_sym":
         # Define the name of the Conda environment and the script with its arguments
         conda_env_name = 'graphviz'
 
-        script_args = ["--domain "+str(args.domain), "--exp_folder "+str(exp_dir)]
+        script_args = ["--domain "+str(args.domain), "--exp_folder "+str(dataset_exp_dir)]
 
         command = f'''
         source $(conda info --base)/etc/profile.d/conda.sh
@@ -131,13 +135,13 @@ if args.task == "create_exp_data_sym":
 
         args_dict = {
             "--domain": args.domain,
-            "--exp_folder": exp_dir,
+            "--exp_folder": dataset_exp_dir,
         }
 
         # Define the name of the Conda environment and the script with its arguments
         conda_env_name = 'graphviz'
         script_path = 'r_latplan_datasets/pddlgym/pddlgym/networkX_returnTransitionsToRemove.py'
-        script_args = ["--domain "+str(args.domain), "--exp_folder "+str(exp_dir)]
+        script_args = ["--domain "+str(args.domain), "--exp_folder "+str(dataset_exp_dir)]
 
         # Construct the command to activate the Conda environment and run the script
         #command = f'conda activate {conda_env_name} && python {script_path} {" ".join(script_args)}'
@@ -168,7 +172,7 @@ if args.task == "create_exp_data_im":
 
     args_dict = {
         "--trace_dir": trace_dir,
-        "--exp_folder": exp_dir,
+        "--exp_folder": dataset_exp_dir,
         "--domain": args.domain,
         "--remove_some_trans": not complete_bool,
         "--add_noisy_trans" : not clean_bool,
@@ -186,6 +190,13 @@ if args.task == "create_exp_data_im":
 
 
 
+    # COPY PASTE THE PBS folder into exp_exp_dir
+    
+
+    if not os.path.exists(exp_exp_dir+"/pbs"):
+        os.makedirs(exp_exp_dir+"/pbs")  
+
+    shutil.copytree(dataset_exp_dir+"/pbs", exp_exp_dir+"/pbs", dirs_exist_ok=True)
 
 
 
