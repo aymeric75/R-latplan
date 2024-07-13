@@ -237,6 +237,7 @@ Each method should call the _load() method of the superclass in turn.
 Users are not expected to call this method directly. Call load() instead.
 Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around methods."""
         with open(self.local(os.path.join(path,"aux.json")), "r") as f:
+
             data = json.load(f)
             _params = self.parameters
             self.parameters = data["parameters"]
@@ -244,8 +245,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             self.build(tuple(data["input_shape"]))
             self.build_aux(tuple(data["input_shape"]))
         for i, net in enumerate(self.nets):
+            # print("JJJJJJJJJJJJJJ")
+            # print(self.local(os.path.join(path,f"net{i}.h5")))
+            # exit()
             net.load_weights(self.local(os.path.join(path,f"net{i}.h5")))
-
+        
     def reload_with_shape(self,input_shape,path=""):
         """Rebuild the network for a shape that is different from the training time, then load the weights."""
         print(f"rebuilding the network with a new shape {input_shape}.")
@@ -353,8 +357,20 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         else:
             #input_shape = train_data.shape[1:]
             #input_shape = (2, 57, 158, 3)
-            input_shape = (2, 25, 70, 3)
-            image_shape = input_shape[1:]
+            #input_shape = (2, 25, 70, 3)
+            print("type val_data")
+            print(type(val_data))
+            print(val_data.shape)
+            print(val_data.shape[1:])
+
+            if self.parameters["type"] == "vanilla":
+                input_shape = val_data.shape[1:]
+                #input_shape = 
+                image_shape = input_shape[1:]
+            else:
+                input_shape = (2, 43, 43, 3)
+                image_shape = input_shape[1:]
+
             self.build(input_shape)
             self.build_aux(input_shape)
 
@@ -369,8 +385,13 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         else:
             start_epoch = 0
 
+        print("train_data shap")
+        print(train_data.shape)
         # batch size should be smaller / eq to the length of train_data
-        batch_size = min(batch_size, len(train_data))
+        if self.parameters["type"] == "vanilla":
+            batch_size = min(batch_size, train_data.shape[0])
+        else:
+            batch_size = min(batch_size, len(train_data))
         #batch_size = 10
 
 
@@ -436,9 +457,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             for i in range(len(subdata)//batch_size):
                 yield subdata[i*batch_size:(i+1)*batch_size]
 
-        index_array = np.arange(len(train_data))
+        if self.parameters["type"] == "vanilla":
+            index_array = np.arange(len(train_data[0]))
+        else:
+            index_array = np.arange(len(train_data))
 
-        #print(index_array)
 
         clist = CallbackList(callbacks=self.callbacks)
         clist.set_model(self.nets[0])
@@ -476,6 +499,22 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
 
 
+        def generate_logs_vanilla(data,data_to):
+            losses = []
+            logs   = {}
+            for i, (net, subdata, subdata_to) in enumerate(zip(self.nets, data, data_to)):
+                evals = net.evaluate(subdata,
+                                     subdata_to,
+                                     batch_size=batch_size,
+                                     verbose=0)
+                logs_net = { k:v for k,v in zip(net.metrics_names, ensure_list(evals)) }
+                losses.append(logs_net["loss"])
+                logs.update(logs_net)
+            if len(losses) > 2:
+                for i, loss in enumerate(losses):
+                    logs["loss"+str(i)] = loss
+            logs["loss"] = np.sum(losses)
+            return logs
 
         def generate_logs(data, data_to, epoch=0, forwandb=False):
 
@@ -551,78 +590,111 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             logs["loss"] = np.sum(losses)
             return logs
 
+        if self.parameters["type"] == "vanilla":
 
-        try:
+            try:
+                clist.on_train_begin()
+                logs = {}
+                for epoch in range(start_epoch,start_epoch+epoch):
+                    np.random.shuffle(index_array)
+                    indices_cache       = [ indices for indices in make_batch(index_array) ]
+                    train_data_cache    = [[ train_subdata   [indices] for train_subdata    in train_data    ] for indices in indices_cache ]
+                    train_data_to_cache = [[ train_subdata_to[indices] for train_subdata_to in train_data_to ] for indices in indices_cache ]
+                    clist.on_epoch_begin(epoch,logs)
+                    for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
+                        for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
+                            net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
-            clist.on_train_begin()
-            logs = {}
+                    logs = {}
+                    for k,v in generate_logs_vanilla(train_data, train_data_to).items():
+                        logs["t_"+k] = v
+                    for k,v in generate_logs_vanilla(val_data,  val_data_to).items():
+                        logs["v_"+k] = v
+                    clist.on_epoch_end(epoch,logs)
+                    if self.nets[0].stop_training:
+                        break
+                clist.on_train_end()
 
-            for epoch in range(start_epoch, start_epoch+epoch):
-                np.random.shuffle(index_array)
-                indices_cache       = [ indices for indices in make_batch(index_array) ]
+            except KeyboardInterrupt:
+                print("learning stopped\n")
+            finally:
+                self.save()
+                self.loaded = True
+            return self
 
-                train_data_cache = [[train_data[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
-                train_data_to_cache = [[ train_data_to[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
+        else:
 
-                batch_count=0
-                clist.on_epoch_begin(epoch,logs)
-                for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
-                    #for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
-                    #    #net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
+            try:
 
-                    net = self.nets[0]
-
-                    #self.parameters["present_xys"] = self.parameters["x_and_ys"][batch_count]
-
-                    # print("SHAPE SUBDATA")
-                    # print(len(train_subdata_cache))
-                    # # 
-
-                    # images (each item[0] of train_subdata_cache)
-                    #x_data = np.array([np.expand_dims(item[0], axis=-1) for item in train_subdata_cache])
-                    x_data = np.array([item[0] for item in train_subdata_cache])
-
-
-                    # actions (each item[1] of train_subdata_cache)
-                    action_input_data = []
-                    for item in train_subdata_cache:
-
-                        action_input_data.append(item[1])
-
-                    action_input_data = np.array(action_input_data)
-  
-                    net.train_on_batch([x_data, action_input_data], x_data)
-                    batch_count+=1
-                
-                
+                clist.on_train_begin()
                 logs = {}
 
-                for k,v in generate_logs(val_data,  val_data_to, epoch=epoch, forwandb=self.parameters["use_wandb"]).items():
-                    logs["v_"+k] = v
-                    if k == "elbo":
-                        if float(v) < lowest_elbo:
-                            lowest_elbo = float(v)
-                            i_for_best_files = epoch
-                clist.on_epoch_end(epoch,logs)
-                if self.nets[0].stop_training:
-                    break
+                for epoch in range(start_epoch, start_epoch+epoch):
+                    np.random.shuffle(index_array)
 
-                if epoch > 0 and epoch % 250 == 0:
-                    print("lowest_elbolowest_elbolowest_elbolowest_elbo")
-                    print(lowest_elbo)
+                    indices_cache       = [ indices for indices in make_batch(index_array) ]
+                    train_data_cache = [[train_data[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
+                    train_data_to_cache = [[ train_data_to[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
 
-                    self.save(path = the_exp_path, epoch=epoch, lowest_elbo=str(int(lowest_elbo)))
+                    batch_count=0
+                    clist.on_epoch_begin(epoch,logs)
+                    for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
+                        #for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
+                        #    #net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
-            wandb.finish()
-            clist.on_train_end()
+                        net = self.nets[0]
+
+                        #self.parameters["present_xys"] = self.parameters["x_and_ys"][batch_count]
+
+                        # print("SHAPE SUBDATA")
+                        # print(len(train_subdata_cache))
+                        # # 
+
+                        # images (each item[0] of train_subdata_cache)
+                        #x_data = np.array([np.expand_dims(item[0], axis=-1) for item in train_subdata_cache])
+                        x_data = np.array([item[0] for item in train_subdata_cache])
 
 
-        except KeyboardInterrupt:
-            print("learning stopped\n")
-        finally:
-            self.save(epoch=epoch)
-            self.loaded = True
-        return self
+                        # actions (each item[1] of train_subdata_cache)
+                        action_input_data = []
+                        for item in train_subdata_cache:
+
+                            action_input_data.append(item[1])
+
+                        action_input_data = np.array(action_input_data)
+    
+                        net.train_on_batch([x_data, action_input_data], x_data)
+                        batch_count+=1
+                    
+                    
+                    logs = {}
+
+                    for k,v in generate_logs(val_data,  val_data_to, epoch=epoch, forwandb=self.parameters["use_wandb"]).items():
+                        logs["v_"+k] = v
+                        if k == "elbo":
+                            if float(v) < lowest_elbo:
+                                lowest_elbo = float(v)
+                                i_for_best_files = epoch
+                    clist.on_epoch_end(epoch,logs)
+                    if self.nets[0].stop_training:
+                        break
+
+                    if epoch > 0 and epoch % 250 == 0:
+                        print("lowest_elbolowest_elbolowest_elbolowest_elbo")
+                        print(lowest_elbo)
+
+                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo=str(int(lowest_elbo)))
+
+                wandb.finish()
+                clist.on_train_end()
+
+
+            except KeyboardInterrupt:
+                print("learning stopped\n")
+            finally:
+                self.save(epoch=epoch)
+                self.loaded = True
+            return self
 
     def evaluate(self,*args,**kwargs):
 

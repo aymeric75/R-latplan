@@ -1,0 +1,10 @@
+Default float: float32
+'sys.argvsys.argvsys.argv
+sokoban
+['/workspace/R-latplan/train_kltune.py', 'learn', 'sokoban', 'sokoban_image-20000-global-global-2-train', '20000', 'CubeSpaceAE_AMA4Conv', 'kltune2', '--dataset_folder', 'sokoban_complete_clean_faultless_normal_size']
+{'mode': 'learn', 'track': 'sokoban_image-20000-global-global-2-train', 'num_examples': 20000, 'aeclass': 'CubeSpaceAE_AMA4Conv', 'comment': 'kltune2', 'dataset_folder': 'sokoban_complete_clean_faultless_normal_size', 'type': ''}
+SAE PATH
+sokoban_sokoban_image-20000-global-global-2-train_20000_CubeSpaceAE_AMA4Conv_kltune2
+loaded. picsize: [28 28  3]
+(19999, 2, 28, 28, 3)
+normalized shape: (28, 28, 3) (28, 28, 3)

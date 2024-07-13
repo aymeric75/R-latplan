@@ -12,14 +12,23 @@ def switch_conda_environment(env_name):
 
 
 parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
+parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if vanilla or r-latplan')
 parser.add_argument('task', type=str, choices=['create_clean_traces', 'create_exp_data_sym', 'create_exp_data_im'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('complete', type=str, choices=['complete', 'partial'], help='completness of the dataset, i.e. if missing transitions or not')
 parser.add_argument('clean', type=str, choices=['clean', 'noisy'], help='if the dataset should be clean or noisy')
 parser.add_argument('erroneous', type=str, choices=['erroneous', 'faultless'], help='if the dataset should contain some mislabeled transitions')
+parser.add_argument('use_transi_iden', type=str, choices=["True", "False"], help='if to use the transition identifier')
+parser.add_argument('extra_label', type=str, help='add an extra label to the repo', default="NOT")
 
 
 args = parser.parse_args()
+
+
+use_transi_iden = False
+if args.use_transi_iden == "True":
+    use_transi_iden = True
+
 
 def bool_to_str(s):
     if s:
@@ -63,23 +72,57 @@ elif args.erroneous == "faultless":
 ##########   CREATE THE FOLDERS and SUBFOLDERS   ###########
 
 ### Create the "dataset" folder and the subfolder for this very dataset, if does not exist
-if not os.path.exists("r_latplan_datasets"):
-    os.makedirs("r_latplan_datasets") 
+if args.type == "r_latplan":
 
-### Create the domain subfolder
-if not os.path.exists("r_latplan_datasets/"+args.domain):
-    os.makedirs("r_latplan_datasets/"+args.domain) 
+    if not os.path.exists("r_latplan_datasets"):
+        os.makedirs("r_latplan_datasets") 
+    ### Create the domain subfolder
+    if not os.path.exists("r_latplan_datasets/"+args.domain):
+        os.makedirs("r_latplan_datasets/"+args.domain) 
 
-## create the subfolder of a particular experiment
-dataset_folder_name = args.domain+"_"+args.complete+"_"+args.clean+"_"+args.erroneous
-if not os.path.exists("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name):
-    os.makedirs("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name) 
 
-dataset_exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
+    use_ti = "withoutTI"
+    if use_transi_iden == True:
+        use_ti = "withTI"
 
-exp_exp_dir = os.getcwd()+'/'+"r_latplan_exps/"+args.domain+"/"+dataset_folder_name
+    ## create the subfolder of a particular experiment
+    dataset_folder_name = args.domain+"_"+args.complete+"_"+args.clean+"_"+args.erroneous + "_" + use_ti
+    if args.extra_label != "NOT":
+        dataset_folder_name = dataset_folder_name + "_"  + args.extra_label
 
-trace_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
+    if not os.path.exists("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name):
+        os.makedirs("r_latplan_datasets/"+args.domain+"/"+dataset_folder_name) 
+
+    dataset_exp_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain+"/"+dataset_folder_name
+
+    exp_exp_dir = os.getcwd()+'/'+"r_latplan_exps/"+args.domain+"/"+dataset_folder_name
+
+    trace_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
+
+
+elif args.type == "vanilla":
+
+    if not os.path.exists("r_vanilla_latplan_datasets"):
+        os.makedirs("r_vanilla_latplan_datasets") 
+    ### Create the domain subfolder
+    if not os.path.exists("r_vanilla_latplan_datasets/"+args.domain):
+        os.makedirs("r_vanilla_latplan_datasets/"+args.domain) 
+
+    ## create the subfolder of a particular experiment
+    dataset_folder_name = args.domain+"_"+args.complete+"_"+args.clean+"_"+args.erroneous
+    if args.extra_label != "NOT":
+        dataset_folder_name = dataset_folder_name + "_"  + args.extra_label
+    if not os.path.exists("r_vanilla_latplan_datasets/"+args.domain+"/"+dataset_folder_name):
+        os.makedirs("r_vanilla_latplan_datasets/"+args.domain+"/"+dataset_folder_name) 
+
+    dataset_exp_dir = os.getcwd()+'/'+"r_vanilla_latplan_datasets/"+args.domain+"/"+dataset_folder_name
+
+    exp_exp_dir = os.getcwd()+'/'+"r_vanilla_latplan_exps/"+args.domain+"/"+dataset_folder_name
+
+    trace_dir = os.getcwd()+'/'+"r_vanilla_latplan_datasets/"+args.domain
+
+
+
 
 
 
@@ -91,7 +134,6 @@ if args.task == "create_clean_traces":
 
     script_path = './r_latplan_datasets/pddlgym/pddlgym/genTraces.py'
 
-    traces_dir = os.getcwd()+'/'+"r_latplan_datasets/"+args.domain
     args2 = [args.domain,  traces_dir]
 
     result = subprocess.run(['python', script_path] + args2, capture_output=False, text=True)
@@ -106,14 +148,12 @@ if args.task == "create_clean_traces":
 if args.task == "create_exp_data_sym":
 
 
-
     ####################### CREATE THE SYMBOLIC PROBLEMS DATA ###################################
 
 
     if complete_bool == True:
 
         script_path_2 = './r_latplan_datasets/pddlgym/pddlgym/networkX-genGraph.py'
-
 
         # Define the name of the Conda environment and the script with its arguments
         conda_env_name = 'graphviz'
@@ -128,8 +168,6 @@ if args.task == "create_exp_data_sym":
         # Use subprocess to run the command in a shell
         process = subprocess.Popen(command, shell=True, executable='/bin/bash')
         process.communicate()
-
-
 
     else:
 
@@ -168,28 +206,53 @@ if args.task == "create_exp_data_im":
 
     script_path = './r_latplan_datasets/pddlgym/pddlgym/genDatasets.py'
 
-
-
     args_dict = {
         "--trace_dir": trace_dir,
         "--exp_folder": dataset_exp_dir,
         "--domain": args.domain,
         "--remove_some_trans": not complete_bool,
         "--add_noisy_trans" : not clean_bool,
-        "--ten_percent_noisy_and_dupplicated": erroneous_bool
+        "--ten_percent_noisy_and_dupplicated": erroneous_bool,
+        "--type_exp": args.type,
+        "--use_transi_iden": args.use_transi_iden,
+        
     }
 
     # Convert the dictionary to a list of arguments
-    args_list = []
-    for key, value in args_dict.items():
-        args_list.append(key)
-        if value is not None:
-            args_list.append(str(value))
+
+
+    if args.complete == 'partial':
+        subfolders = [f.name for f in os.scandir(dataset_exp_dir + "/pbs") if f.is_dir()]
+        for subf in subfolders:
+
+            args_list = []
+            for key, value in args_dict.items():
+                args_list.append(key)
+                if value is not None:
+                    args_list.append(str(value))
+            
+            args_list.append("--pb_folder")
+            args_list.append(subf)
+
+            
+            print(args_list)
+            result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
     
-    result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+    # call genDatasets.py for each of the pbs folders present in the pbs folder
+    # 
+    
+    else:
+        
+        args_list = []
+        for key, value in args_dict.items():
+            args_list.append(key)
+            if value is not None:
+                args_list.append(str(value))
+        
 
+        result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
-
+    exit()
     # COPY PASTE THE PBS folder into exp_exp_dir
     
 

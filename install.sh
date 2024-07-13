@@ -1,6 +1,6 @@
 #!/bin/bash
 
-git submodule update --recursive
+# git submodule update --recursive
 
 # (
 #     cd downward
@@ -18,10 +18,30 @@ git submodule update --recursive
 #     ros setup
 # )
 
-# ros dynamic-space-size=8000 install numcl arrival eazy-gnuplot magicffi dataloader
+# ros dynamic-space-size=8000 install numcl arrival eazy-gnuplot 
 
-# make -j 1 -C lisp
+# ros install guicho271828/magicffi
 
-# ./setup.py install
+# ros dataloader
+
+# ros install sbcl 
+
+# line='export PATH="/root/.roswell/bin:$PATH"'
+
+# # Check if the line already exists in the .bashrc file
+# if ! grep -Fxq "$line" ~/.bashrc
+# then
+#     # If the line does not exist, append it to the end of the .bashrc file
+#     echo "$line" >> ~/.bashrc
+#     echo "Line added to .bashrc"
+# else
+#     echo "Line already exists in .bashrc"
+# fi
+
+# source ~/.bashrc
+
+make -j 1 -C lisp
+
+./setup.py install
 
 # ./download-dataset.sh

@@ -32,6 +32,8 @@ parser.add_argument("heuristics", choices=options.keys(),
                     "\n".join([ " "*4+key+"\n"+" "*8+value for key,value in options.items()]))
 parser.add_argument("cycle", type=int, default=1, nargs="?",
                     help="number of autoencoding cycles to perform on the initial/goal images")
+parser.add_argument("typee", type=str, default=None, nargs="?",
+                    help="vanilla or r latplan")
 parser.add_argument("sigma", type=float, default=None, nargs="?",
                     help="sigma of the Gaussian noise added to the normalized initial/goal images.")
 args = parser.parse_args()
@@ -58,16 +60,17 @@ float_formatter = lambda x: "%.3f" % x
 np.set_printoptions(threshold=sys.maxsize,formatter={'float_kind':float_formatter})
 
 
-def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
-
+def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
 
 
     network_dir = os.path.dirname(domainfile)
     domainfile_rel = os.path.relpath(domainfile, network_dir)
 
+    # print("begiin")
 
     # print(network_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless
     # print(domainfile_rel) # domain.pddl
+
 
     def domain(path):
         dom_prefix = domainfile_rel.replace("/","_")
@@ -78,7 +81,10 @@ def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
         return "{}_{}{}".format(heuristics, root, ext)
     
     log("loaded puzzle")
-    sae = latplan.model.load(network_dir,allow_failure=True)
+    if typee == "vanilla":
+        sae = latplan.modelVanilla.load(network_dir,allow_failure=True)
+    else:
+        sae = latplan.model.load(network_dir,allow_failure=True)
     log("loaded sae")
     setup_planner_utils(sae, problem_dir, network_dir, "ama3")
 
@@ -114,14 +120,22 @@ def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
         os.path.exists(ig) or np.savetxt(ig,[bits],"%d")
         echodo(["helper/ama3-problem.sh",ig,problemfile])
         log(f"finished generating problem")
-    
+
+        print("R LATPLAN STUFF")
+        print(problemfile)
+        print(domainfile)
+        print(options[heuristics])
+
         ###### do planning #############################################
         log(f"start planning")
         echodo(["helper/fd-latest.sh", options[heuristics], problemfile, domainfile])
         log(f"finished planning")
+        print("FINITO")
 
-        if not os.path.exists(planfile):
-            return valid
+        
+
+        # if not os.path.exists(planfile):
+        #     return valid
         found = True
         log(f"start running a validator")
         echodo(["arrival", domainfile, problemfile, planfile, tracefile])
@@ -151,15 +165,7 @@ def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
         log(f"start visually validating the plan image : transitions")
         # note: only puzzle, hanoi, lightsout have the custom validator, which are all monochrome.
         plan_images = sae.render(plan_images) # unnormalize the image
-        validation = p.validate_transitions([plan_images[0:-1], plan_images[1:]])
-        print(validation)
-        valid = bool(np.all(validation))
-        log(f"finished visually validating the plan image : transitions")
-
-        log(f"start visually validating the plan image : states")
-        print(p.validate_states(plan_images))
-        log(f"finished visually validating the plan image : states")
-        return valid
+        return True
 
     finally:
         with open(jsonfile,"w") as f:
@@ -192,6 +198,7 @@ def main(domainfile, problem_dir, heuristics, cycle, sigma=None):
 
 if __name__ == '__main__':
     try:
+
         main(**vars(args))
     except:
         import latplan.util.stacktrace

@@ -12,6 +12,7 @@
 *.trace
 *.npz
 *.h5
+*.p
 learn/events*
 /mnist_model/
 *.bin

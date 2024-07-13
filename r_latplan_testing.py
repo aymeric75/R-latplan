@@ -61,6 +61,7 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
+parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
 parser.add_argument('task', type=str, choices=['generate_pddl', 'gen_plans'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
@@ -69,20 +70,22 @@ args = parser.parse_args()
 
 
 
-### 
+###
 
-
-exp_folder = "r_latplan_exps/"+args.domain+"/"+args.dataset_folder
-
+if args.type == "r_latplan":
+    exp_folder = "r_latplan_exps/"+args.domain+"/"+args.dataset_folder
+else:
+    exp_folder = "r_vanilla_latplan_exps/"+args.domain+"/"+args.dataset_folder
 print("exp_folder")
 print(exp_folder)
 
 
 if args.task == "generate_pddl":
     
-    lowest_num = find_lowest_integer(exp_folder)
 
-    copy_and_rename_files(exp_folder, lowest_num, exp_folder)
+    # lowest_num = find_lowest_integer(exp_folder)
+
+    # copy_and_rename_files(exp_folder, lowest_num, exp_folder)
 
     # go over each net0-* file , and retrieve the min right part
 
@@ -97,49 +100,59 @@ if args.task == "generate_pddl":
 
     if args.domain == "hanoi":
         task="hanoi"
-        typee="mnist"
+        typee=""
         width="4"
         height="4"
         nb_examples="20000"
 
-    # elif args.domain == "blocks":
+    elif args.domain == "blocks":
+        task="blocks"
+        typee="cylinders-4-flat"
+        width_height=""
+        nb_examples="20000"
 
-    #     task="blocks"
-    #     typee="cylinders-4-flat"
-    #     width_height=""
-    #     nb_examples="20000"
-
-    # elif args.domain == "sokoban":
-    #     task="sokoban"
-    #     typee="sokoban_image-20000-global-global-2-train"
-    #     width_height=""
-    #     nb_examples="20000"
+    elif args.domain == "sokoban":
+        task="sokoban"
+        typee="sokoban_image-20000-global-global-2-train"
+        width=""
+        height=""
+        nb_examples="20000"
 
     #$type $width_height $nb_examples CubeSpaceAE_AMA4Conv kltune2
 
     args_dict = {
         "dump": None,
         task: None,
+        typee: None,
         "width": width,
         "height": height,
         nb_examples: None,
         "CubeSpaceAE_AMA4Conv" : None,
         "kltune2": None,
-        "--dataset_folder": args.dataset_folder
+        "--dataset_folder": args.dataset_folder,
+        "--type": args.type
     }
 
 
     # Convert the dictionary to a list of arguments
     args_list = []
     for key, value in args_dict.items():
-        if key == "width" or key == "height":
-            args_list.append(str(value))
+        if ( key == "width" or key == "height" ):
+            if args.domain != "sokoban":
+                if str(value) != "":
+                    args_list.append(str(value))
         else:
-            args_list.append(key)
+            if str(key) != "":
+                args_list.append(key)
             if value is not None:
-                args_list.append(str(value))
+                if str(value) != "":
+                    args_list.append(str(value))
 
-    #result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+    # print(args_list)
+    # exit()
+
+    result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
 
     args_list = [exp_folder]
 
@@ -149,7 +162,7 @@ if args.task == "generate_pddl":
 
 
 elif args.task == "gen_plans":
-
+    
 
     ### from the domain PDDL generated 
     
@@ -162,12 +175,12 @@ elif args.task == "gen_plans":
 
     for subfold in subfolders:
 
+
         args_dict = {
             exp_folder+"/domain.pddl": None,
             exp_folder+"/pbs/"+subfold: None,
             "blind": None,
             "1": None,
-            
 
         }
         # $dir/domain.pddl $dir/$probs_subdir blind 1
@@ -182,14 +195,17 @@ elif args.task == "gen_plans":
                 if value is not None:
                     args_list.append(str(value))
 
+        args_list.append(args.type)
         #result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
+        # print("args_list")
+        # print(args_list)
 
         script_path = './ama3-planner.py'
 
         result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
-        exit()
+        #exit()
 
 
     ### go through each Pb folder and use ama3-planner.py (to modify of course) on each

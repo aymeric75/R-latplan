@@ -3,7 +3,7 @@ import os.path
 import glob
 
 import numpy as np
-import latplan.model
+
 import latplan.util.stacktrace
 from latplan.util.tuning import simple_genetic_search, parameters, nn_task, reproduce, load_history
 from latplan.util        import curry
@@ -99,8 +99,6 @@ def add_common_arguments(subparser,task,objs=False):
                            nargs='?',
                            default="",
                            help="A string which is appended to the directory name to label each experiment.")
-    
-
 
 
     subparser.add_argument("--dataset_folder",
@@ -108,7 +106,10 @@ def add_common_arguments(subparser,task,objs=False):
                            default="",
                            help="folder path of where the images are")
 
-    
+    subparser.add_argument("--type",
+                           nargs='?',
+                           default="",
+                           help="if vanilla or r_latplan")
     
     return
 
@@ -137,6 +138,14 @@ def main(parameters={}):
 
     print("'sys.argvsys.argvsys.argv")
     print(sys.argv[2])
+
+    print(sys.argv)
+    
+    if sys.argv[-1] == 'vanilla':
+        import latplan.modelVanilla
+    else:
+        import latplan.model
+
 
     if(sys.argv[2]=="puzzle"):
         sae_path = "_".join(sys.argv[2:9])
@@ -257,8 +266,6 @@ def run(path,transitions,extra=None):
     #### former Vanilla Latplan code
     train, val, test = train_val_test_split(transitions)
 
-
-
     # learning: un base_aux_json
     #                   puis le exp_aux_json
     #
@@ -266,20 +273,32 @@ def run(path,transitions,extra=None):
     #       testing depuis le exp_aux_json
 
     # 
-    dataset_aux_json_folder_base = "r_latplan_datasets/"+sys.argv[2]
+    dataset_fold = None
 
-    dataset_aux_json_folder_exp = "r_latplan_datasets/"+sys.argv[2] + "/" + args.dataset_folder
+    if args.type == "vanilla":
+        dataset_fold = "r_vanilla_latplan_datasets"
+    else:
+        dataset_fold = "r_latplan_datasets"
 
-    exp_aux_json_folder = "r_latplan_exps/" +sys.argv[2] + "/" + args.dataset_folder
 
+    dataset_aux_json_folder_base = dataset_fold+"/"+sys.argv[2]
+
+    dataset_aux_json_folder_exp = dataset_fold+"/"+sys.argv[2] + "/" + args.dataset_folder
+
+    exp_aux_json_folder = None
+    if args.type == "vanilla":
+        exp_aux_json_folder = "r_vanilla_latplan_exps/" +sys.argv[2] + "/" + args.dataset_folder
+    else:
+        exp_aux_json_folder = "r_latplan_exps/" +sys.argv[2] + "/" + args.dataset_folder
     
     # 
     path_to_dataset = dataset_aux_json_folder_exp +"/data.p"
 
 
+ 
     # load dataset for the specific experiment
     loaded_data = load_dataset(path_to_dataset)
-        
+    
     train_set = loaded_data["train_set"] 
     test_val_set = loaded_data["test_val_set"] 
     all_pairs_of_images_reduced_orig = loaded_data["all_pairs_of_images_reduced_orig"] 
@@ -291,11 +310,34 @@ def run(path,transitions,extra=None):
     orig_min = loaded_data["orig_min"] 
 
 
-    # load the json file from the base domain folder (in order to update and copy/save it in the exp subfolder)
-    if os.path.isfile(os.path.join(dataset_aux_json_folder_base,"aux.json")):
-        with open(os.path.join(dataset_aux_json_folder_base,"aux.json"),"r") as f:
-            data = json.load(f)
+    if args.type == "vanilla":
+        train_set_ = []
+        for tr in train_set:
+            train_set_.append(tr[0])
+        train_set = np.array(train_set_)
+        test_val_set_ = []
+        for tr in test_val_set:
+            test_val_set_.append(tr[0])
+        test_val_set = np.array(test_val_set_)
 
+
+
+    # load the json file from the base domain folder (in order to update and copy/save it in the exp subfolder)
+    
+    if 'learn' in args.mode:
+        print("LI1")
+        print(os.path.join(exp_aux_json_folder,"aux.json"))
+
+        if os.path.isfile(os.path.join(exp_aux_json_folder,"aux.json")):
+            with open(os.path.join(exp_aux_json_folder,"aux.json"),"r") as f:
+                data = json.load(f)
+
+    elif 'dump' in args.mode:
+        print("LI2")
+        print(os.path.join(exp_aux_json_folder,"aux.json"))
+        if os.path.isfile(os.path.join(exp_aux_json_folder,"aux.json")):
+            with open(os.path.join(exp_aux_json_folder,"aux.json"),"r") as f:
+                data = json.load(f)
 
 
     # Step 2: Replace 'mean' and 'std' in the dictionary
@@ -305,13 +347,36 @@ def run(path,transitions,extra=None):
     data['parameters']['orig_max'] = orig_max
     data['parameters']['orig_min'] = orig_min
     data["parameters"]["time_start"] = ""
-    data['parameters']['A'] = len(all_actions_unique)
 
-    aaa = [2]
-    aaa.extend(train_set[0][0][0].shape)
-    data["input_shape"] = aaa
+    if args.type == "vanilla" and 'dump' in args.mode:
+        data["parameters"]["beta_z_and_beta_d"] = [1, 1000]
+        data["parameters"]["pdiff_z1z2_z0z3"] = [1, 1000]
 
 
+
+    if args.type == "vanilla":
+        data['parameters']['A'] = 6000
+    else:
+        data['parameters']['A'] = len(all_actions_unique)
+
+    if args.type == "vanilla":
+
+        aaa = [2]
+        aaa.extend(train_set[0][0].shape)
+        data["input_shape"] = aaa
+
+    else:
+
+        aaa = [2]
+        aaa.extend(train_set[0][0][0].shape)
+        data["input_shape"] = aaa
+
+
+    print("ON EST LAAAAAAAAAA")
+    print("dataset_aux_json_folder_exp {}".format(dataset_aux_json_folder_exp))
+    print()
+    print("exp_aux_json_folder {}".format(exp_aux_json_folder))
+    print()
     # save the updated aux.json into the exp subfolder of the dataset folder
     with open(os.path.join(dataset_aux_json_folder_exp,"aux.json"),"w") as f:
         json.dump(data, f, indent=4)
@@ -362,33 +427,44 @@ def run(path,transitions,extra=None):
 
         # beta_z_and_beta_d
         parameters["epoch"] = 1
+        #parameters["A"] = 6000
 
         parameters["beta_ama_recons"] = 1
-        parameters["beta_z_and_beta_d"] = [1,1000]
-        parameters["pdiff_z1z2_z0z3"] = [1,1000]
+        parameters["beta_z_and_beta_d"] = [1, 1000]
+        parameters["pdiff_z1z2_z0z3"] = [1, 1000]
         print("theparameters")
         #print(parameters)
 
-        net = latplan.model.load(exp_aux_json_folder, allow_failure=False)
-        
+        # print("exp_aux_json_folderexp_aux_json_folder")
+        # print(exp_aux_json_folder)
+        # exit()
+        if sys.argv[-1] == 'vanilla':
+            net = latplan.modelVanilla.load(exp_aux_json_folder, allow_failure=False)
+        else:
+            net = latplan.model.load(exp_aux_json_folder, allow_failure=False)
+
         print(type(transitions)) # 
         #print(transitions.shape) # (5000, 2, 48, 48, 1)
         print(len(transitions))
+        
+        # print(np.array(transitions).shape)
 
-        print(np.array(transitions).shape)
+        if args.type == "vanilla":
+            #dump_actions(net, [transitions, actions_transitions], name = "actions.csv", repeat=1)
+            dump_actions(net, train_set, name = "actions.csv", repeat=1)
+        
+        else:
 
-        thetransarray=[]
-        theactionarray=[]
-        for trr in train_set:
-            thetransarray.append(trr[0])
-            theactionarray.append(trr[1])
+            thetransarray=[]
+            theactionarray=[]
+            for trr in train_set:
+                thetransarray.append(trr[0])
+                theactionarray.append(trr[1])
+            
 
-
-        print(net) # latplan.model.ConvolutionalConcreteDetNormalizedLogitAddBidirectionalTransitionAEPlus
-
-        #dump_actions(net, [transitions, actions_transitions], name = "actions.csv", repeat=1)
-        dump_actions(net, [thetransarray, theactionarray], name = "actions.csv", repeat=1)
-
+            #dump_actions(net, [transitions, actions_transitions], name = "actions.csv", repeat=1)
+            dump_actions(net, [thetransarray, theactionarray], name = "actions.csv", repeat=1)
+            # alors...
 
 
 
@@ -398,7 +474,7 @@ def run(path,transitions,extra=None):
     if 'learn' in args.mode:
 
 
-        parameters["epoch"] = 5000
+        parameters["epoch"] = 10000
 
         parameters["load_sae_weights"] = False
         
@@ -409,12 +485,17 @@ def run(path,transitions,extra=None):
         # val_set = [val_set[0]]
 
         parameters["the_exp_path"] = exp_aux_json_folder
-        parameters["beta_z_and_beta_d"] = [10, 1000]
-        parameters["N"] = 300
-        parameters["pdiff_z1z2_z0z3"] = 0
-
-        task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
-        task()
+        # parameters["beta_z_and_beta_d"] = [10, 1000]
+        # parameters["N"] = 300
+        # parameters["pdiff_z1z2_z0z3"] = 0
+        parameters["type"] = args.type
+        
+        if args.type == "vanilla":
+            task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+            task()
+        else:
+            task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+            task()
 
         # simple_genetic_search(
         #     curry(nn_task, latplan.model.get(parameters["aeclass"]),

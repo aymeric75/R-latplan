@@ -45,6 +45,7 @@ setattr(keras.optimizers,"radam", RAdam)
 from . import util
 from . import puzzles
 from . import model
+from . import modelVanilla
 from . import ama2model
 from . import main
 

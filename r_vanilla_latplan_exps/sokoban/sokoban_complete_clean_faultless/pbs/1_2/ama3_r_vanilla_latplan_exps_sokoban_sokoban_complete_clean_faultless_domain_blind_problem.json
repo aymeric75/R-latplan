@@ -1,0 +1,207 @@
+{
+  "network": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless",
+  "problem": "1_2",
+  "domain": "pbs",
+  "noise": null,
+  "times": [
+    {
+      "message": "init",
+      "wall": 0,
+      "elapsed": 0
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 0.7032949924468994,
+      "elapsed": 0.7032949924468994
+    },
+    {
+      "message": "loaded sae",
+      "wall": 5.240369558334351,
+      "elapsed": 4.537074565887451
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 5.461944103240967,
+      "elapsed": 0.2215745449066162
+    },
+    {
+      "message": "loading init/goal",
+      "wall": 5.461989879608154,
+      "elapsed": 4.57763671875e-05
+    },
+    {
+      "message": "loaded init/goal",
+      "wall": 6.4941182136535645,
+      "elapsed": 1.0321283340454102
+    },
+    {
+      "message": "start planning",
+      "wall": 6.494143486022949,
+      "elapsed": 2.5272369384765625e-05
+    },
+    {
+      "message": "start generating problem",
+      "wall": 6.494280099868774,
+      "elapsed": 0.0001366138458251953
+    },
+    {
+      "message": "finished generating problem",
+      "wall": 6.6947596073150635,
+      "elapsed": 0.20047950744628906
+    },
+    {
+      "message": "start planning",
+      "wall": 6.694888591766357,
+      "elapsed": 0.0001289844512939453
+    },
+    {
+      "message": "finished planning",
+      "wall": 54.68198037147522,
+      "elapsed": 47.98709177970886
+    },
+    {
+      "message": "start running a validator",
+      "wall": 54.682087421417236,
+      "elapsed": 0.00010704994201660156
+    },
+    {
+      "message": "finished running a validator",
+      "wall": 55.09612584114075,
+      "elapsed": 0.41403841972351074
+    },
+    {
+      "message": "start parsing the plan",
+      "wall": 55.096208572387695,
+      "elapsed": 8.273124694824219e-05
+    },
+    {
+      "message": "finished parsing the plan",
+      "wall": 55.23606896400452,
+      "elapsed": 0.1398603916168213
+    },
+    {
+      "message": "start plotting the plan",
+      "wall": 55.23611283302307,
+      "elapsed": 4.38690185546875e-05
+    },
+    {
+      "message": "finished plotting the plan",
+      "wall": 55.37854051589966,
+      "elapsed": 0.14242768287658691
+    },
+    {
+      "message": "start archiving the plan",
+      "wall": 55.37879657745361,
+      "elapsed": 0.0002560615539550781
+    },
+    {
+      "message": "finished archiving the plan",
+      "wall": 55.39549541473389,
+      "elapsed": 0.016698837280273438
+    },
+    {
+      "message": "start visually validating the plan image : transitions",
+      "wall": 55.39562749862671,
+      "elapsed": 0.00013208389282226562
+    }
+  ],
+  "heuristics": "blind",
+  "domainfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/domain.pddl",
+  "problemfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.pddl",
+  "planfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.plan",
+  "tracefile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.trace",
+  "csvfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.csv",
+  "pngfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.png",
+  "jsonfile": "r_vanilla_latplan_exps/sokoban/sokoban_complete_clean_faultless/pbs/1_2/ama3_r_vanilla_latplan_exps_sokoban_sokoban_complete_clean_faultless_domain_blind_problem.json",
+  "statistics": {
+    "translator_variables": 299,
+    "translator_derived_variables": 0,
+    "translator_facts": 599,
+    "translator_goal_facts": 299,
+    "translator_mutex_groups": 0,
+    "translator_total_mutex_group_size": null,
+    "translator_operators": 2026,
+    "translator_axioms": 0,
+    "translator_task": 52015,
+    "translator_peak_memory": 176016,
+    "translate": 47.166,
+    "plan_length": 1,
+    "plan_cost": 1,
+    "expanded": 2,
+    "evaluated": 14,
+    "generated": 36,
+    "search": 0.000272982,
+    "initialization": 0.0216353,
+    "total": 47.1879
+  },
+  "parameters": {
+    "test_noise": false,
+    "test_hard": true,
+    "train_noise": true,
+    "train_hard": false,
+    "dropout_z": false,
+    "noise": 0.2,
+    "dropout": 0.2,
+    "optimizer": "radam",
+    "min_temperature": 0.5,
+    "epoch": 10000,
+    "gs_annealing_start": 0,
+    "gs_annealing_end": 1000,
+    "kl_cycle_start": 2000,
+    "clipnorm": 0.1,
+    "batch_size": 200,
+    "lr": 0.001,
+    "N": 300,
+    "zerosuppress": 0.1,
+    "densify": false,
+    "max_temperature": 5.0,
+    "conv_channel": 16,
+    "conv_channel_increment": 1,
+    "conv_kernel": 10,
+    "conv_pooling": 1,
+    "conv_per_pooling": 1,
+    "conv_depth": 3,
+    "fc_width": 100,
+    "fc_depth": 2,
+    "A": 6000,
+    "aae_activation": "relu",
+    "aae_width": 1000,
+    "aae_depth": 4,
+    "eff_regularizer": null,
+    "beta_d": 1000,
+    "beta_z": 1,
+    "output": "GaussianOutput(sigma=0.1)",
+    "mode": "learn",
+    "track": "sokoban_image-20000-global-global-2-train",
+    "num_examples": 20000,
+    "aeclass": "CubeSpaceAE_AMA4Conv",
+    "comment": "kltune2",
+    "generator": "latplan.puzzles.sokoban",
+    "picsize": [
+      28,
+      28,
+      3
+    ],
+    "orig_max": 0,
+    "orig_min": 1,
+    "input_shape": 22,
+    "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
+    "hash": "ba2993f4c846471125b6c172ee3fc832",
+    "time_start": "06-23T07:09:40.612",
+    "pdiff_z1z2_z0z3": [
+      1,
+      1000
+    ],
+    "load_sae_weights": false,
+    "use_wandb": true,
+    "beta_z_and_beta_d": [
+      1,
+      1000
+    ],
+    "beta_a_recons": 1
+  },
+  "valid": false,
+  "found": true,
+  "exhausted": false,
+  "cycle": 1
+}

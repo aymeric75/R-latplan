@@ -90,16 +90,22 @@ def init_goal_misc(p, cycle=1, noise=None, image_path=None):
         with open(image_path_+"/"+name+".p", mode="rb") as f:
             loaded_data = pickle.load(f)
         image = loaded_data["image"]
+        # print("IMAGE50")
+        # print(image[10:20,10:20,0])
+        # exit()
 
 
-        #image = imageio.imread(problem(f"{name}.png")) / 255
-        if len(image.shape) == 2:
-            image = image.reshape(*image.shape, 1)
-        image = sae.output.normalize(image)
+
         return image
 
     def autoencode_image(name,image):
+
+
+
         state = sae.encode(np.array([image]))[0].round().astype(int)
+        print("np sum state")
+        print(np.sum(state))
+
         image_rec = sae.decode(np.array([state]))[0]
         print(f"{name} (input) min:",image.min(),"max:",image.max(),)
         print(f"{name} (recon) min:",image_rec.min(),"max:",image_rec.max(),)
@@ -158,8 +164,11 @@ def init_goal_misc(p, cycle=1, noise=None, image_path=None):
     #     print("Init/Goal state reconstruction failed!")
     #     # sys.exit(3)
     #     print("But we continue anyways...")
+    print("INITT ")
+    print(init)
 
-
+    print("GOALL ")
+    print(goal)
     return init, goal
 
 def setup_planner_utils(_sae, _problem_dir, _network_dir, _ama_version):

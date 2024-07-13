@@ -11,11 +11,13 @@ def switch_conda_environment(env_name):
 
 
 parser = argparse.ArgumentParser(description="A script to train R-latplan for a specific experiment")
+parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if vanilla or r-latplan')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 
 
 args = parser.parse_args()
+
 
 
 
@@ -61,10 +63,20 @@ dico_hanoi = {
 
 ## create the subfolder of a particular experiment
 
-if not os.path.exists("r_latplan_exps/"+args.domain+"/"+args.dataset_folder):
-    os.makedirs("r_latplan_exps/"+args.domain+"/"+args.dataset_folder) 
+_exp_base = None
 
-exp_folder = "r_latplan_exps/"+args.domain+"/"+args.dataset_folder
+if args.type == "r_latplan":
+    _exp_base = "r_latplan_exps"
+
+elif args.type == "vanilla":
+    _exp_base = "r_vanilla_latplan_exps"  
+
+
+if not os.path.exists(_exp_base + "/"+args.domain+"/"+args.dataset_folder):
+    os.makedirs(_exp_base + "/"+args.domain+"/"+args.dataset_folder) 
+
+exp_folder = _exp_base + "/"+args.domain+"/"+args.dataset_folder
+
 
 
 dico_ = None
@@ -78,17 +90,19 @@ elif args.domain == "hanoi":
 
 
 script_path = './train_kltune.py'
+# learn sokoban sokoban_image-20000-global-global-2-train  20000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA
 
 
 args_dict = {
     "learn": None,
     dico_["task"]: None,
-    #dico_["type"]: None,
+    dico_["type"]: None,
     dico_["width_height"]: None,
     dico_["nb_examples"]: None,
     "CubeSpaceAE_AMA4Conv": None,
     "kltune2": None,
     "--dataset_folder": args.dataset_folder,
+    "--type": args.type,
 }
 
 # Convert the dictionary to a list of arguments
@@ -102,15 +116,19 @@ for key, value in args_dict.items():
         args_list_str += str(value)+" "
 
 
-print(args_list_str)
-
 # learn hanoi  4 4 5000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA2
 
 
-outfile_str = "/workspace/R-latplan/r_latplan_exps/" + args.domain  + "/" + args.dataset_folder + "/file.out"
-errfile_str = "/workspace/R-latplan/r_latplan_exps/" + args.domain  + "/" + args.dataset_folder + "/file.err"
+outfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + args.dataset_folder + "/file.out"
+errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + args.dataset_folder + "/file.err"
 
+# print("errfile_str")
+# print(errfile_str)
 
+# print("outfile_str")
+# print(outfile_str)
+
+# exit()
 
 #result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
