@@ -14,9 +14,14 @@ parser = argparse.ArgumentParser(description="A script to train R-latplan for a 
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if vanilla or r-latplan')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
-
+parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
 
 args = parser.parse_args()
+
+if 'partial' in args.dataset_folder and args.pb_folder == "":
+    print("pb_folder ARG is REQUIRED")
+    exit()
+
 
 
 
@@ -93,6 +98,15 @@ script_path = './train_kltune.py'
 # learn sokoban sokoban_image-20000-global-global-2-train  20000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA
 
 
+
+if 'partial' in args.dataset_folder:
+    dataset_fold = args.dataset_folder+"/pbs/" + args.pb_folder
+else:
+    dataset_fold = args.dataset_folder
+
+
+#exit()
+
 args_dict = {
     "learn": None,
     dico_["task"]: None,
@@ -101,7 +115,7 @@ args_dict = {
     dico_["nb_examples"]: None,
     "CubeSpaceAE_AMA4Conv": None,
     "kltune2": None,
-    "--dataset_folder": args.dataset_folder,
+    "--dataset_folder": dataset_fold,
     "--type": args.type,
 }
 
@@ -119,8 +133,8 @@ for key, value in args_dict.items():
 # learn hanoi  4 4 5000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA2
 
 
-outfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + args.dataset_folder + "/file.out"
-errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + args.dataset_folder + "/file.err"
+outfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/file.out"
+errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/file.err"
 
 # print("errfile_str")
 # print(errfile_str)

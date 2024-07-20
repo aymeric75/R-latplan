@@ -31,6 +31,56 @@ dico_r_latplan = {
     8: 3,
 }
 
+
+
+dico = {
+
+    "blocks": {
+        "r_latplan": {
+            1: 3,
+            3: 3,
+            6: 3,
+            12: 3
+        },
+        "vanilla": {
+            1: 3,
+            3: 2,
+            6: 0,
+            12: 0
+        }
+    },
+
+    "sokoban": {
+        "r_latplan": {
+            1: 3,
+            5: 3,
+            10: 3,
+            18: 3
+        },
+        "vanilla": {
+            1: 3,
+            5: 2,
+            10: 0,
+            18: 0
+        }
+    },
+    "hanoi": {
+        "r_latplan": {
+            1: 3,
+            3: 3,
+            5: 3,
+            8: 3
+        },
+        "vanilla": {
+            1: 3,
+            3: 2,
+            5: 0,
+            8: 0
+        }
+    }
+}
+
+
 # Extracting keys and values for plotting
 x_vanilla, y_vanilla = zip(*dico_vanilla.items())
 x_r_latplan, y_r_latplan = zip(*dico_r_latplan.items())

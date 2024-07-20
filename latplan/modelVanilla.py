@@ -1408,14 +1408,18 @@ class BaseActionMixinAMA3Plus(UnidirectionalMixin, BaseActionMixin):
 # AMA4+ Space AE : Bidirectional model with correct ELBO #######################
 
 class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
-    def _save(self, path="", epoch=None):
+    def _save(self, path="", epoch=None, lowest_elbo=None, normal=True):
         # saved separately so that we can switch between loading or not loading it.
         # since the weights are fixed size, loading it with a different input shape causes an error.
-        super()._save(path, epoch=epoch)
+        super()._save(path, epoch=epoch, lowest_elbo=None,normal=normal)
         print("saving additional networks")
         import os.path
-        np.savez_compressed(self.local(os.path.join(path,f"p_a_z0_net-{epoch}.npz")),*self.p_a_z0_net[0].get_weights())
-        np.savez_compressed(self.local(os.path.join(path,f"p_a_z1_net-{epoch}.npz")),*self.p_a_z1_net[0].get_weights())
+        if normal == True:
+            np.savez_compressed(path+"/p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z0_net[0].get_weights())
+            np.savez_compressed(path+"/p_a_z1_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z1_net[0].get_weights())
+        else:
+            np.savez_compressed(path+"/p_a_z0_net-"+str(epoch)+".npz",*self.p_a_z0_net[0].get_weights())
+            np.savez_compressed(path+"/p_a_z1_net-"+str(epoch)+".npz",*self.p_a_z1_net[0].get_weights())
 
     def _load(self,path=""):
         # loaded separately so that we can switch between loading or not loading it.

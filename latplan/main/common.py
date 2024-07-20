@@ -295,7 +295,6 @@ def run(path,transitions,extra=None):
     path_to_dataset = dataset_aux_json_folder_exp +"/data.p"
 
 
- 
     # load dataset for the specific experiment
     loaded_data = load_dataset(path_to_dataset)
     
@@ -326,10 +325,10 @@ def run(path,transitions,extra=None):
     
     if 'learn' in args.mode:
         print("LI1")
-        print(os.path.join(exp_aux_json_folder,"aux.json"))
+        print(os.path.join("r_latplan_exps/" +sys.argv[2],"aux.json"))
 
-        if os.path.isfile(os.path.join(exp_aux_json_folder,"aux.json")):
-            with open(os.path.join(exp_aux_json_folder,"aux.json"),"r") as f:
+        if os.path.isfile(os.path.join("r_latplan_exps/" +sys.argv[2],"aux.json")):
+            with open(os.path.join("r_latplan_exps/" +sys.argv[2],"aux.json"),"r") as f:
                 data = json.load(f)
 
     elif 'dump' in args.mode:

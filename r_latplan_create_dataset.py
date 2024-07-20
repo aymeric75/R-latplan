@@ -26,7 +26,7 @@ args = parser.parse_args()
 
 
 use_transi_iden = False
-if args.use_transi_iden == "True":
+if args.use_transi_iden == "True" and args.type == "r_latplan":
     use_transi_iden = True
 
 
@@ -206,6 +206,10 @@ if args.task == "create_exp_data_im":
 
     script_path = './r_latplan_datasets/pddlgym/pddlgym/genDatasets.py'
 
+    use_transi_iden_str = "False"
+    if use_transi_iden:
+        use_transi_iden_str = "True"
+
     args_dict = {
         "--trace_dir": trace_dir,
         "--exp_folder": dataset_exp_dir,
@@ -214,7 +218,7 @@ if args.task == "create_exp_data_im":
         "--add_noisy_trans" : not clean_bool,
         "--ten_percent_noisy_and_dupplicated": erroneous_bool,
         "--type_exp": args.type,
-        "--use_transi_iden": args.use_transi_iden,
+        "--use_transi_iden": use_transi_iden_str,
         
     }
 
@@ -252,14 +256,39 @@ if args.task == "create_exp_data_im":
 
         result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
-    exit()
+
     # COPY PASTE THE PBS folder into exp_exp_dir
     
 
-    if not os.path.exists(exp_exp_dir+"/pbs"):
-        os.makedirs(exp_exp_dir+"/pbs")  
+    import os
+    import shutil
 
-    shutil.copytree(dataset_exp_dir+"/pbs", exp_exp_dir+"/pbs", dirs_exist_ok=True)
+    source_dir = os.path.join(dataset_exp_dir, "pbs")
+    dest_dir = os.path.join(exp_exp_dir, "pbs")
+
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+
+    for root, dirs, files in os.walk(source_dir):
+        rel_path = os.path.relpath(root, source_dir)
+        dest_path = os.path.join(dest_dir, rel_path)
+
+        if not os.path.exists(dest_path):
+            os.makedirs(dest_path)
+        
+        for file in files:
+            src_file = os.path.join(root, file)
+            dest_file = os.path.join(dest_path, file)
+            
+            if not os.path.exists(dest_file):
+                shutil.copy2(src_file, dest_file)
+
+        for dir in dirs:
+            src_dir = os.path.join(root, dir)
+            dest_subdir = os.path.join(dest_path, dir)
+            
+            if not os.path.exists(dest_subdir):
+                shutil.copytree(src_dir, dest_subdir)
 
 
 

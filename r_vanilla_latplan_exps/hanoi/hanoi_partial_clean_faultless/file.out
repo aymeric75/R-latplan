@@ -1,0 +1,89 @@
+Default float: float32
+'sys.argvsys.argvsys.argv
+hanoi
+['/workspace/R-latplan/train_kltune.py', 'learn', 'hanoi', '4', '4', '5000', 'CubeSpaceAE_AMA4Conv', 'kltune2', '--dataset_folder', 'hanoi_partial_clean_faultless', '--type', 'vanilla']
+{'mode': 'learn', 'disks': 4, 'towers': 4, 'num_examples': 5000, 'aeclass': 'CubeSpaceAE_AMA4Conv', 'comment': 'kltune2', 'dataset_folder': 'hanoi_partial_clean_faultless', 'type': 'vanilla'}
+SAE PATH
+hanoi_4_4_5000_CubeSpaceAE_AMA4Conv
+(5000, 2, 4, 16, 3)
+normalized shape: (4, 16, 3) (4, 16, 3)
+LI1
+r_latplan_exps/hanoi/aux.json
+ON EST LAAAAAAAAAA
+dataset_aux_json_folder_exp r_vanilla_latplan_datasets/hanoi/hanoi_partial_clean_faultless
+
+exp_aux_json_folder r_vanilla_latplan_exps/hanoi/hanoi_partial_clean_faultless
+
+class precedence list:
+  <class 'latplan.modelVanilla.ConvolutionalConcreteDetNormalizedLogitAddBidirectionalTransitionAEPlus'>
+  <class 'latplan.mixins.encoder_decoder.StridedConvolutionalMixin'>
+  <class 'latplan.mixins.encoder_decoder.ConvolutionalMixin'>
+  <class 'latplan.modelVanilla.ConcreteDetNormalizedLogitAddBidirectionalTransitionAEPlus'>
+  <class 'latplan.modelVanilla.DetActionMixin'>
+  <class 'latplan.modelVanilla.NormalizedLogitAddBidirectionalMixin'>
+  <class 'latplan.modelVanilla.NormalizedLogitAddPreconditionMixin'>
+  <class 'latplan.modelVanilla.NormalizedLogitAddEffectMixin'>
+  <class 'latplan.modelVanilla.LogitEffectMixin'>
+  <class 'latplan.modelVanilla.BaseActionMixinAMA4Plus'>
+  <class 'latplan.modelVanilla.BidirectionalMixin'>
+  <class 'latplan.modelVanilla.PreconditionMixin'>
+  <class 'latplan.modelVanilla.EffectMixin'>
+  <class 'latplan.modelVanilla.BaseActionMixin'>
+  <class 'latplan.modelVanilla.TransitionWrapper'>
+  <class 'latplan.modelVanilla.StateAE'>
+  <class 'latplan.mixins.latent.ConcreteLatentMixin'>
+  <class 'latplan.modelVanilla.EarlyStopMixin'>
+  <class 'latplan.mixins.encoder_decoder.FullConnectedMixin'>
+  <class 'latplan.mixins.encoder_decoder.EncoderDecoderMixin'>
+  <class 'latplan.modelVanilla.AE'>
+  <class 'latplan.network.Network'>
+  <class 'object'>
+clearning tf session
+cleared tf session
+type val_data
+<class 'numpy.ndarray'>
+(515, 2, 18, 49, 3)
+(2, 18, 49, 3)
+Building networks
+building a convolutional encoder
+pool per layer: 1 depth: 2 total pool: 1 H: 18 W: 49 dH: 0 dW: 0
+<keras.layers.convolutional.Conv2D object at 0x7f861d2604f0>
+[0, 18, 49, 3] -> (0, 18, 49, 32) : <keras.layers.convolutional.Conv2D object at 0x7f861d2604f0>
+<keras.layers.normalization.BatchNormalization object at 0x7f861d2609a0>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.normalization.BatchNormalization object at 0x7f861d2609a0>
+<keras.layers.core.Dropout object at 0x7f861d260a60>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.core.Dropout object at 0x7f861d260a60>
+<keras.layers.convolutional.Conv2D object at 0x7f861d260ac0>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.convolutional.Conv2D object at 0x7f861d260ac0>
+<keras.layers.normalization.BatchNormalization object at 0x7f861d260be0>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.normalization.BatchNormalization object at 0x7f861d260be0>
+<keras.layers.core.Dropout object at 0x7f861d260ca0>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.core.Dropout object at 0x7f861d260ca0>
+latent space shape is (18, 49, 32) : 300 propositions in total
+building a convolutional decoder
+pool per layer: 1 depth: 2 total pool: 1 H: 18 W: 49 dH: 0 dW: 0
+<keras.layers.core.Reshape object at 0x7f861d278220>
+[0, 18, 49, 32] -> (0, 18, 49, 32) : <keras.layers.core.Reshape object at 0x7f861d278220>
+<keras.layers.convolutional.Conv2DTranspose object at 0x7f861d278280>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.convolutional.Conv2DTranspose object at 0x7f861d278280>
+<keras.layers.normalization.BatchNormalization object at 0x7f861d278520>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.normalization.BatchNormalization object at 0x7f861d278520>
+<keras.layers.core.Dropout object at 0x7f861d278400>
+(0, 18, 49, 32) -> (0, 18, 49, 32) : <keras.layers.core.Dropout object at 0x7f861d278400>
+<keras.layers.convolutional.Conv2DTranspose object at 0x7f861d278430>
+(0, 18, 49, 32) -> (0, 18, 49, 3) : <keras.layers.convolutional.Conv2DTranspose object at 0x7f861d278430>
+Network built
+Building auxiliary networks
+Auxiliary network built
+train_data shap
+(2060, 2, 18, 49, 3)
+Compiling networks
+there are 1 networks.
+there are 1 optimizers.
+there are 1 losses.
+compiling <keras.engine.training.Model object at 0x7f855a4206a0> with <keras_radam.optimizers.RAdam object at 0x7f8557fc9d30>, <function BaseActionMixinAMA4Plus._build_primary.<locals>.loss at 0x7f855a4213a0>.
+Network compiled
+lowest_elbolowest_elbolowest_elbolowest_elbo
+9999999999.0
+path
+r_vanilla_latplan_exps/hanoi/hanoi_partial_clean_faultless

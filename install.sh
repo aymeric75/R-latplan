@@ -14,15 +14,19 @@
 #     sh bootstrap
 #     ./configure
 #     make
-#     sudo make install
+#     make install
 #     ros setup
 # )
+
+# ros delete magicffi
+
+# ros delete sbcl
 
 # ros dynamic-space-size=8000 install numcl arrival eazy-gnuplot 
 
 # ros install guicho271828/magicffi
 
-# ros dataloader
+# ros install dataloader
 
 # ros install sbcl 
 
@@ -44,4 +48,4 @@ make -j 1 -C lisp
 
 ./setup.py install
 
-# ./download-dataset.sh
+#./download-dataset.sh

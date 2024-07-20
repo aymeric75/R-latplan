@@ -66,6 +66,8 @@ This dict can be used while building the network, making it easier to perform a 
                 keras.callbacks.TerminateOnNaN(),
                 keras.callbacks.LambdaCallback(
                     on_epoch_end = self.bar_update,),
+                # keras.callbacks.LambdaCallback(
+                #     on_batch_end = self.bar_update,),
                 keras.callbacks.TensorBoard(
                     histogram_freq = 0,
                     log_dir     = self.path,
@@ -163,7 +165,7 @@ into a full path."""
 
 
 
-    def _save(self, path="", epoch=None, lowest_elbo=None):
+    def _save(self, path="", epoch=None, lowest_elbo=None, normal=True):
         """An interface for saving a network.
 Users may define a method for each subclass for adding a new save-time feature.
 Each method should call the _save() method of the superclass in turn.
@@ -172,8 +174,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
 
         for i, net in enumerate(self.nets):
-            net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+"-"+str(lowest_elbo)+".h5")
-            #net.save_weights(self.local(os.path.join(path,f"net{i}-"+str(epoch)+"-"+str(lowest_elbo)+".h5")))
+            
+            if normal:
+                net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+".h5")
+            else:
+                net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+"-"+str(lowest_elbo)+".h5")
 
         with open(path+"/"+"aux.json", "w") as f:
             json.dump({"parameters":self.parameters,
@@ -185,7 +190,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
 
 
-    def save(self,path="", epoch=None, lowest_elbo=None):
+    def save(self,path="", epoch=None, lowest_elbo=None, normal=True):
        
         
         """An interface for saving a network.
@@ -195,7 +200,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         #print("Saving the network to {}".format(self.local(path)))
         #os.makedirs(self.local(path),exist_ok=True)
 
-        self._save(path=path, epoch=epoch, lowest_elbo=lowest_elbo)
+        self._save(path=path, epoch=epoch, lowest_elbo=lowest_elbo, normal=normal)
         print("Network saved")
         return self
 
@@ -590,11 +595,14 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             logs["loss"] = np.sum(losses)
             return logs
 
+
         if self.parameters["type"] == "vanilla":
 
             try:
+
                 clist.on_train_begin()
                 logs = {}
+
                 for epoch in range(start_epoch,start_epoch+epoch):
                     np.random.shuffle(index_array)
                     indices_cache       = [ indices for indices in make_batch(index_array) ]
@@ -603,9 +611,26 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                     clist.on_epoch_begin(epoch,logs)
                     for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
                         for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
+                            
+                            
                             net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
+
+                            # logs = {}
+
+                            # for k,v in generate_logs(val_data,  val_data_to, epoch=epoch, batch=some_, forwandb=self.parameters["use_wandb"]).items():
+                            #     logs["v_"+k] = v
+                            # clist.on_batch_end(epoch,logs)
+
                     logs = {}
+
+                    if epoch > 0 and epoch % 250 == 0:
+                        print("lowest_elbolowest_elbolowest_elbolowest_elbo")
+                        print(lowest_elbo)
+
+                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo="None", normal=True)
+
+
                     for k,v in generate_logs_vanilla(train_data, train_data_to).items():
                         logs["t_"+k] = v
                     for k,v in generate_logs_vanilla(val_data,  val_data_to).items():
@@ -618,7 +643,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             except KeyboardInterrupt:
                 print("learning stopped\n")
             finally:
-                self.save()
+                #self.save()
                 self.loaded = True
             return self
 
@@ -636,7 +661,6 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                     train_data_cache = [[train_data[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
                     train_data_to_cache = [[ train_data_to[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
 
-                    batch_count=0
                     clist.on_epoch_begin(epoch,logs)
                     for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
                         #for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
@@ -664,7 +688,6 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         action_input_data = np.array(action_input_data)
     
                         net.train_on_batch([x_data, action_input_data], x_data)
-                        batch_count+=1
                     
                     
                     logs = {}
@@ -683,9 +706,9 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         print("lowest_elbolowest_elbolowest_elbolowest_elbo")
                         print(lowest_elbo)
 
-                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo=str(int(lowest_elbo)))
+                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo=str(int(lowest_elbo)), normal=False)
 
-                wandb.finish()
+                #wandb.finish()
                 clist.on_train_end()
 
 
