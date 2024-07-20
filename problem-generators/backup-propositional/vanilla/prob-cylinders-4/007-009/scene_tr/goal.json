@@ -1,0 +1,183 @@
+{
+  "relationships": {
+    "right": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "behind": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "left": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "front": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  "image_filename": "goal.png",
+  "objects": [
+    {
+      "stackable": true,
+      "size": 0.7,
+      "shape": "SmoothCylinder",
+      "material": "Rubber",
+      "location": [
+        -3.5,
+        0,
+        4.9
+      ],
+      "id": 0,
+      "bbox": [
+        29.0,
+        23.0,
+        48.0,
+        39.0
+      ],
+      "rotation": 219.56880717167664,
+      "color": [
+        1.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "pixel_coords": [
+        39,
+        31,
+        15.928669929504395
+      ]
+    },
+    {
+      "stackable": true,
+      "size": 0.7,
+      "shape": "SmoothCylinder",
+      "material": "Rubber",
+      "location": [
+        -3.5,
+        0,
+        3.5
+      ],
+      "id": 1,
+      "bbox": [
+        30.0,
+        37.0,
+        48.0,
+        53.0
+      ],
+      "rotation": 57.34480939910683,
+      "color": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "pixel_coords": [
+        40,
+        45,
+        16.186674118041992
+      ]
+    },
+    {
+      "stackable": true,
+      "size": 0.7,
+      "shape": "SmoothCylinder",
+      "material": "Rubber",
+      "location": [
+        -3.5,
+        0,
+        2.0999999999999996
+      ],
+      "id": 2,
+      "bbox": [
+        31.0,
+        51.0,
+        48.0,
+        68.0
+      ],
+      "rotation": 119.76441978692957,
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "pixel_coords": [
+        40,
+        59,
+        16.444677352905273
+      ]
+    },
+    {
+      "stackable": true,
+      "size": 0.7,
+      "shape": "SmoothCylinder",
+      "material": "Rubber",
+      "location": [
+        -3.5,
+        0,
+        0.7
+      ],
+      "id": 3,
+      "bbox": [
+        32.0,
+        64.0,
+        49.0,
+        81.0
+      ],
+      "rotation": 275.4319143534654,
+      "color": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "pixel_coords": [
+        41,
+        72,
+        16.702682495117188
+      ]
+    }
+  ],
+  "directions": {
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "front": [
+      -0.0,
+      -0.9999999403953552,
+      -0.0
+    ],
+    "right": [
+      1.0,
+      -0.0,
+      -0.0
+    ],
+    "behind": [
+      0.0,
+      0.9999999403953552,
+      0.0
+    ],
+    "left": [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ]
+  }
+}

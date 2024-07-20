@@ -1,0 +1,209 @@
+{
+  "network": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless",
+  "problem": "5_2",
+  "domain": "pbs",
+  "noise": null,
+  "times": [
+    {
+      "message": "init",
+      "wall": 0,
+      "elapsed": 0
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 0.7642984390258789,
+      "elapsed": 0.7642984390258789
+    },
+    {
+      "message": "loaded sae",
+      "wall": 5.415668964385986,
+      "elapsed": 4.651370525360107
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 5.415832996368408,
+      "elapsed": 0.000164031982421875
+    },
+    {
+      "message": "loading init/goal",
+      "wall": 5.416245698928833,
+      "elapsed": 0.0004127025604248047
+    },
+    {
+      "message": "loaded init/goal",
+      "wall": 6.530614376068115,
+      "elapsed": 1.1143686771392822
+    },
+    {
+      "message": "start planning",
+      "wall": 6.530657768249512,
+      "elapsed": 4.3392181396484375e-05
+    },
+    {
+      "message": "start generating problem",
+      "wall": 6.530872583389282,
+      "elapsed": 0.0002148151397705078
+    },
+    {
+      "message": "finished generating problem",
+      "wall": 6.699878931045532,
+      "elapsed": 0.16900634765625
+    },
+    {
+      "message": "start planning",
+      "wall": 6.699980020523071,
+      "elapsed": 0.0001010894775390625
+    },
+    {
+      "message": "finished planning",
+      "wall": 182.38299989700317,
+      "elapsed": 175.6830198764801
+    },
+    {
+      "message": "start running a validator",
+      "wall": 182.38305234909058,
+      "elapsed": 5.245208740234375e-05
+    },
+    {
+      "message": "finished running a validator",
+      "wall": 182.91424584388733,
+      "elapsed": 0.5311934947967529
+    },
+    {
+      "message": "start parsing the plan",
+      "wall": 182.9143249988556,
+      "elapsed": 7.915496826171875e-05
+    },
+    {
+      "message": "finished parsing the plan",
+      "wall": 183.05441808700562,
+      "elapsed": 0.14009308815002441
+    },
+    {
+      "message": "start plotting the plan",
+      "wall": 183.0544672012329,
+      "elapsed": 4.9114227294921875e-05
+    },
+    {
+      "message": "finished plotting the plan",
+      "wall": 183.3122878074646,
+      "elapsed": 0.25782060623168945
+    },
+    {
+      "message": "start archiving the plan",
+      "wall": 183.3228521347046,
+      "elapsed": 0.010564327239990234
+    },
+    {
+      "message": "finished archiving the plan",
+      "wall": 183.3364236354828,
+      "elapsed": 0.013571500778198242
+    },
+    {
+      "message": "start visually validating the plan image : transitions",
+      "wall": 183.33669018745422,
+      "elapsed": 0.0002665519714355469
+    }
+  ],
+  "heuristics": "blind",
+  "domainfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/domain.pddl",
+  "problemfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.pddl",
+  "planfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.plan",
+  "tracefile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.trace",
+  "csvfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.csv",
+  "pngfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.png",
+  "jsonfile": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless/pbs/5_2/ama3_r_vanilla_latplan_exps_hanoi_hanoi_complete_noisy_faultless_domain_blind_problem.json",
+  "statistics": {
+    "translator_variables": 101,
+    "translator_derived_variables": 0,
+    "translator_facts": 202,
+    "translator_goal_facts": 101,
+    "translator_mutex_groups": 0,
+    "translator_total_mutex_group_size": null,
+    "translator_operators": 491,
+    "translator_axioms": 0,
+    "translator_task": 21478,
+    "translator_peak_memory": 233360,
+    "translate": 175.28,
+    "plan_length": 4,
+    "plan_cost": 4,
+    "expanded": 571,
+    "evaluated": 2210,
+    "generated": 14354,
+    "search": 0.0102533,
+    "initialization": 0.0092545,
+    "total": 175.3
+  },
+  "parameters": {
+    "test_noise": false,
+    "test_hard": true,
+    "train_noise": true,
+    "train_hard": false,
+    "dropout_z": false,
+    "noise": 0.2,
+    "dropout": 0.2,
+    "optimizer": "radam",
+    "min_temperature": 0.5,
+    "epoch": 10000,
+    "gs_annealing_start": 0,
+    "gs_annealing_end": 1000,
+    "kl_cycle_start": 2000,
+    "clipnorm": 0.1,
+    "batch_size": 400,
+    "lr": 0.001,
+    "N": 300,
+    "zerosuppress": 0.1,
+    "densify": false,
+    "max_temperature": 5.0,
+    "conv_channel": 32,
+    "conv_channel_increment": 1,
+    "conv_kernel": 5,
+    "conv_pooling": 1,
+    "conv_per_pooling": 1,
+    "conv_depth": 3,
+    "fc_width": 100,
+    "fc_depth": 2,
+    "A": 6000,
+    "aae_activation": "relu",
+    "aae_width": 1000,
+    "aae_depth": 2,
+    "eff_regularizer": null,
+    "beta_d": 1000,
+    "beta_z": 1,
+    "output": "GaussianOutput(sigma=0.1)",
+    "mode": "learn",
+    "disks": 4,
+    "towers": 4,
+    "num_examples": 5000,
+    "aeclass": "CubeSpaceAE_AMA4Conv",
+    "comment": "kltune2",
+    "hash": "hanoi",
+    "generator": "latplan.puzzles.hanoi",
+    "picsize": [
+      25,
+      70
+    ],
+    "beta_a_recons": 1,
+    "load_sae_weights": false,
+    "use_wandb": true,
+    "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
+    "time_start": "",
+    "do_sweep": true,
+    "orig_max": 1.0,
+    "orig_min": 0.04842214663643235,
+    "beta_z_and_beta_d": [
+      1,
+      1000
+    ],
+    "pdiff_z1z2_z0z3": [
+      1,
+      1000
+    ],
+    "the_exp_path": "r_vanilla_latplan_exps/hanoi/hanoi_complete_noisy_faultless",
+    "type": "vanilla"
+  },
+  "valid": false,
+  "found": true,
+  "exhausted": false,
+  "cycle": 1
+}
