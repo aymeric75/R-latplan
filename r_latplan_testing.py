@@ -65,8 +65,13 @@ parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='ty
 parser.add_argument('task', type=str, choices=['generate_pddl', 'gen_plans'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
+parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
 
 args = parser.parse_args()
+
+if 'partial' in args.dataset_folder and args.pb_folder == "":
+    print("pb_folder ARG is REQUIRED")
+    exit()
 
 
 
@@ -173,19 +178,56 @@ elif args.task == "gen_plans":
 
     domain_file = exp_folder+"/domain.pddl"
 
-    for subfold in subfolders:
+    if not "partial" in args.dataset_folder:
+
+        for subfold in subfolders:
+
+
+            args_dict = {
+                exp_folder+"/domain.pddl": None,
+                exp_folder+"/pbs/"+subfold: None,
+                "blind": None,
+                "1": None,
+
+            }
+            # $dir/domain.pddl $dir/$probs_subdir blind 1
+
+            # Convert the dictionary to a list of arguments
+            args_list = []
+            for key, value in args_dict.items():
+                if key == "width" or key == "height":
+                    args_list.append(str(value))
+                else:
+                    args_list.append(key)
+                    if value is not None:
+                        args_list.append(str(value))
+
+            args_list.append(args.type)
+            #result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
+            # print("args_list")
+            # print(args_list)
+
+            script_path = './ama3-planner.py'
+
+            result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
+            #exit()
+
+    else:
+        print("exp_folder")
+        print(exp_folder)
+        exp_folder = exp_folder + "/pbs/" + args.pb_folder
 
 
         args_dict = {
             exp_folder+"/domain.pddl": None,
-            exp_folder+"/pbs/"+subfold: None,
+            exp_folder: None,
             "blind": None,
             "1": None,
 
         }
-        # $dir/domain.pddl $dir/$probs_subdir blind 1
 
-        # Convert the dictionary to a list of arguments
         args_list = []
         for key, value in args_dict.items():
             if key == "width" or key == "height":
@@ -204,8 +246,6 @@ elif args.task == "gen_plans":
         script_path = './ama3-planner.py'
 
         result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
-
-        #exit()
 
 
     ### go through each Pb folder and use ama3-planner.py (to modify of course) on each

@@ -2,9 +2,28 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import matplotlib.lines as mlines
 
+
+#  EXP 1 , 2
+# dico = {
+#     "blocks": {
+#         "r_latplan": {1: 3.03, 3: 3.03, 6: 3.03, 12: 3.03},
+#         "vanilla": {1: 3, 3: 2, 6: 0.03, 12: 0.03}
+#     },
+#     "sokoban": {
+#         "r_latplan": {1: 3.06, 5: 3.06, 10: 3.06, 18: 3.06},
+#         "vanilla": {1: 3, 5: 2, 10: 0.06, 18: 0.06}
+#     },
+#     "hanoi": {
+#         "r_latplan": {1: 3, 3: 3, 5: 3, 8: 3},
+#         "vanilla": {1: 3, 3: 2, 5: 0, 8: 0}
+#     }
+# }
+
+
+
 dico = {
     "blocks": {
-        "r_latplan": {1: 3.03, 3: 3.03, 6: 3.03, 12: 3.03},
+        "r_latplan": {, 13: 3.03},
         "vanilla": {1: 3, 3: 2, 6: 0.03, 12: 0.03}
     },
     "sokoban": {
@@ -16,6 +35,8 @@ dico = {
         "vanilla": {1: 3, 3: 2, 5: 0, 8: 0}
     }
 }
+
+
 
 # Define colors for each domain
 colors = {
@@ -37,7 +58,7 @@ for domain, models in dico.items():
             linestyle = '--'
         plt.plot(x, y, marker='o', linestyle=linestyle, color=colors[domain], label=f"{domain} - {model}")
 
-plt.title("Exp1")
+plt.title("")
 plt.xlabel("Problem Size")
 plt.ylabel("#solved")
 plt.legend()

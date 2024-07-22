@@ -68,8 +68,8 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
 
     # print("begiin")
 
-    # print(network_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless
-    # print(domainfile_rel) # domain.pddl
+    print(network_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless
+    print(domainfile_rel) # domain.pddl
 
 
     def domain(path):
@@ -93,7 +93,10 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
     log("loaded puzzle")
 
     log(f"loading init/goal")
-    init, goal = init_goal_misc(p,cycle,noise=sigma, image_path=problem_dir)
+    if "sokoban" in network_dir:
+        init, goal = init_goal_misc(p,cycle,noise=sigma, image_path=problem_dir, is_soko=True)
+    else:
+        init, goal = init_goal_misc(p,cycle,noise=sigma, image_path=problem_dir, is_soko=False)
     log(f"loaded init/goal")
 
     log(f"start planning")

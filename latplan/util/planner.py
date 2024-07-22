@@ -78,7 +78,7 @@ def unnormalize_colors(normalized_images, mean, std):
 
 
 
-def init_goal_misc(p, cycle=1, noise=None, image_path=None):
+def init_goal_misc(p, cycle=1, noise=None, image_path=None, is_soko=False):
     # import sys
     import imageio
     from .plot         import plot_grid
@@ -120,18 +120,22 @@ def init_goal_misc(p, cycle=1, noise=None, image_path=None):
 
         if name =="init":
             init_unorm_color = unnormalize_colors(image, sae.parameters["mean"], sae.parameters["std"])
-            init_dee = deenhance(init_unorm_color)
-            init_denorm = denormalize(init_dee, sae.parameters["orig_min"], sae.parameters["orig_max"])
-            init_denorm = np.clip(init_denorm, 0, 1)
+            
+            if not is_soko:
+                init_dee = deenhance(init_unorm_color)
+                init_unorm_color = denormalize(init_dee, sae.parameters["orig_min"], sae.parameters["orig_max"])
+            init_denorm = np.clip(init_unorm_color, 0, 1)
             plt.imsave(problem_dir+"/init-from-State.png", init_denorm)
             plt.close()
 
         elif name =="goal":
             goal_unorm_color = unnormalize_colors(image, sae.parameters["mean"], sae.parameters["std"])
-            goal_dee = deenhance(goal_unorm_color)
-            goal_denorm = denormalize(goal_dee, sae.parameters["orig_min"], sae.parameters["orig_max"])
-            goal_denorm = np.clip(goal_denorm, 0, 1)
-            plt.imsave(problem_dir+"/goal-from-State.png", goal_denorm)
+            
+            if not is_soko:
+                goal_dee = deenhance(goal_unorm_color)
+                goal_unorm_color = denormalize(goal_dee, sae.parameters["orig_min"], sae.parameters["orig_max"])
+            goal_unorm_color = np.clip(goal_unorm_color, 0, 1)
+            plt.imsave(problem_dir+"/goal-from-State.png", goal_unorm_color)
             plt.close()
 
         return state, image_rec
