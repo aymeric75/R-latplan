@@ -34,4 +34,18 @@ python ./r_latplan_start_training.py -h
 ## testing
 ```
 python ./r_latplan_testing.py
+    usage: r_latplan_testing.py [-h] [--pb_folder PB_FOLDER] {r_latplan,vanilla} {generate_pddl,gen_plans} {hanoi,blocks,sokoban} dataset_folder
+
+    A script to test R-latplan for a specific experiment
+
+    positional arguments:
+    {r_latplan,vanilla}   type of task to be performed
+    {generate_pddl,gen_plans} type of task to be performed
+    {hanoi,blocks,sokoban} domain name
+    dataset_folder        folder where the images are
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    --pb_folder PB_FOLDER REQUIRED for PARTIAL
+
 ```
