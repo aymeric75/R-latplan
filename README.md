@@ -1,7 +1,7 @@
 ## creating the datasets
 
 ```
-    python ./r_latplan_start_training.py -h
+python ./r_latplan_start_training.py -h
     positional arguments:
     {r_latplan,vanilla}   if vanilla or r-latplan
     {create_clean_traces,create_exp_data_sym,create_exp_data_im}
