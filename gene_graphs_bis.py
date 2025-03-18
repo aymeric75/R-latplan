@@ -4,38 +4,20 @@ import matplotlib.lines as mlines
 
 
 #  EXP 1 , 2
-# dico = {
-#     "blocks": {
-#         "r_latplan": {1: 3.03, 3: 3.03, 6: 3.03, 12: 3.03},
-#         "vanilla": {1: 3, 3: 2, 6: 0.03, 12: 0.03}
-#     },
-#     "sokoban": {
-#         "r_latplan": {1: 3.06, 5: 3.06, 10: 3.06, 18: 3.06},
-#         "vanilla": {1: 3, 5: 2, 10: 0.06, 18: 0.06}
-#     },
-#     "hanoi": {
-#         "r_latplan": {1: 3, 3: 3, 5: 3, 8: 3},
-#         "vanilla": {1: 3, 3: 2, 5: 0, 8: 0}
-#     }
-# }
-
-
-
 dico = {
     "blocks": {
-        "r_latplan": {, 13: 3.03},
-        "vanilla": {1: 3, 3: 2, 6: 0.03, 12: 0.03}
+        "r_latplan": {1.25: 98, 3: 98, 6: 98, 12: 98},
+        "vanilla": {1.25: 98, 3: 76, 6: 2, 12: 2}
     },
     "sokoban": {
-        "r_latplan": {1: 3.06, 5: 3.06, 10: 3.06, 18: 3.06},
-        "vanilla": {1: 3, 5: 2, 10: 0.06, 18: 0.06}
+        "r_latplan": {1.35: 96, 5: 96, 10: 96, 18: 96},
+        "vanilla": {1.35: 96, 5: 75, 10: 4, 18: 4}
     },
     "hanoi": {
-        "r_latplan": {1: 3, 3: 3, 5: 3, 8: 3},
-        "vanilla": {1: 3, 3: 2, 5: 0, 8: 0}
+        "r_latplan": {1: 100, 3: 100, 5: 100, 8: 100},
+        "vanilla": {1: 100, 3: 74, 5: 0, 8: 0}
     }
 }
-
 
 
 # Define colors for each domain
@@ -46,7 +28,7 @@ colors = {
 }
 
 # Plotting the results on the same plot
-plt.figure(figsize=(12, 8))
+plt.figure(figsize=(12, 4))
 
 for domain, models in dico.items():
     for model, results in models.items():
@@ -60,12 +42,13 @@ for domain, models in dico.items():
 
 plt.title("")
 plt.xlabel("Problem Size")
-plt.ylabel("#solved")
+plt.ylabel("% solved")
 plt.legend()
 plt.grid(True)
 plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
 plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
-
+# Set y-axis ticks from 0 to 100 with a step of 10
+plt.yticks(range(0, 101, 10))
 
 # Custom legend entries
 r_latplan_line = mlines.Line2D([], [], color='black', linestyle='-', label='R-latplan')
@@ -76,8 +59,8 @@ hanoi_line = mlines.Line2D([], [], color='red', linestyle='-', label='hanoi')
 
 # Adding custom legend
 domain_legend = plt.legend(handles=[blocks_line, sokoban_line, hanoi_line], loc='lower left', bbox_to_anchor=(0, 0), frameon=False)
-model_legend = plt.legend(handles=[r_latplan_line, vanilla_line], loc='lower left', bbox_to_anchor=(0, 0.1), frameon=False)
+model_legend = plt.legend(handles=[r_latplan_line, vanilla_line], loc='lower left', bbox_to_anchor=(0, 0.2), frameon=False)
 plt.gca().add_artist(domain_legend)
 
-plt.savefig('plan_perfs_hanoi.png')
+plt.savefig('plan_perfs_hanoi_BIS_222222.png')
 

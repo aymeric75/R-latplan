@@ -33,6 +33,42 @@ from .network                import Network
 
 # utilities ####################################################################
 
+from tqdm import tqdm
+class TQDMPredictCallback(keras.callbacks.Callback):
+    def __init__(self, custom_tqdm_instance=None, tqdm_cls=tqdm, num_iterations=0, **tqdm_params):
+        super().__init__()
+        self.tqdm_cls = tqdm_cls
+        self.num_iterations = num_iterations
+        self.tqdm_progress = None
+        self.prev_predict_batch = None
+        self.custom_tqdm_instance = custom_tqdm_instance
+        self.tqdm_params = tqdm_params
+
+
+    def on_predict_batch_begin(self, batch, logs=None):
+        pass
+
+    def on_predict_batch_end(self, batch, logs=None):
+        self.tqdm_progress.update(batch - self.prev_predict_batch)
+        self.prev_predict_batch = batch
+
+    def on_predict_begin(self, logs=None):
+        self.prev_predict_batch = 0
+        if self.custom_tqdm_instance:
+            self.tqdm_progress = self.custom_tqdm_instance
+            return
+
+        total = self.num_iterations
+        if total:
+            total -= 1
+
+        self.tqdm_progress = self.tqdm_cls(total=total, **self.tqdm_params)
+
+    def on_predict_end(self, logs=None):
+        if self.tqdm_progress and not self.custom_tqdm_instance:
+            self.tqdm_progress.close()
+
+
 def get(name):
     return globals()[name]
 
@@ -121,8 +157,12 @@ The latter two are used for verifying the performance of the AE.
 
     def decode(self,data,**kwargs):
         self.load()
-        return self.decoder.predict(data,**kwargs)
+        batch_size = 32 # default
+        num_samples = data.shape[0]
+        num_iterations = (num_samples + batch_size - 1) // batch_size
+        return self.decoder.predict(data, callbacks=[TQDMPredictCallback(num_iterations = num_iterations)], **kwargs)
 
+#(1048576, 50)
     def autoencode(self,data,**kwargs):
         self.load()
         return self.autoencoder.predict(data,**kwargs)
@@ -592,16 +632,21 @@ It contans only as many rows as the available actions. Unused actions are remove
         print(actions[:4])
         print()
         print(actions[-4:])
-        print("la")
+        print("laAAAAAAAA")
         print(len(actions[0]))
         print(len(actions[0][0]))
+
         histogram = np.squeeze(actions.sum(axis=0,dtype=int))
         print("histogram")
         print(histogram)
+
         true_num_actions = np.count_nonzero(histogram)
         #true_num_actions = 352
         print("true_num_actions")
         print(true_num_actions)
+        print("actions.shapeactions.shape")
+        print(actions.shape)
+
         all_labels = np.zeros((true_num_actions, actions.shape[1], actions.shape[2]), dtype=int)
         action_ids = np.where(histogram > 0)[0]
         print("len(action_ids)")
@@ -625,8 +670,9 @@ It contans only as many rows as the available actions. Unused actions are remove
     def dump_actions(self, transitions, **kwargs):
         print("la1")
 
-        print(np.array(transitions[0]).shape) # (2408, 2, 25, 70, 3)
-        print(np.array(transitions[1]).shape) # (2408, 15)
+        print(np.array(transitions[0]).shape) # (51102, 2, 18, 49, 3)
+        print(np.array(transitions[1]).shape) # (51102, 1469)
+
         
         transitions_z = self.encode(np.array(transitions[0]),**kwargs)
         pre = transitions_z[:,0,...]
@@ -1544,7 +1590,6 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
 
         x = Input(shape=(2,*input_shape))
         action_input = Input(shape=(self.parameters["A"],)) # shape is # (? ,24)
-
 
         _, x_pre, x_suc = dapply(x)
         z, z_pre, z_suc = dapply(x, self._encode)

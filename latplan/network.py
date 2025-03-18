@@ -50,6 +50,7 @@ This dict can be used while building the network, making it easier to perform a 
         self.metrics = []
         self.nets    = [None]
         self.losses  = [None]
+        self.num_iterations = 0
         if parameters:
             # handle the test-time where parameters is not given
             self.path = os.path.join(path,"logs",self.parameters["time_start"])
@@ -363,18 +364,27 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             #input_shape = train_data.shape[1:]
             #input_shape = (2, 57, 158, 3)
             #input_shape = (2, 25, 70, 3)
-            print("type val_data")
-            print(type(val_data))
-            print(val_data.shape)
-            print(val_data.shape[1:])
+            # print("type val_data")
+            # print(type(val_data))
+            # print(val_data.shape)
+            # print(val_data.shape[1:])
 
             if self.parameters["type"] == "vanilla":
                 input_shape = val_data.shape[1:]
                 #input_shape = 
                 image_shape = input_shape[1:]
             else:
-                input_shape = (2, 43, 43, 3)
-                image_shape = input_shape[1:]
+
+                image_shape = val_data[0][0][0].shape
+                input_shape = [2]
+                input_shape.extend(image_shape)
+                input_shape = tuple(input_shape)
+
+
+            
+            # print("input_shapeinput_shape")
+            # print(input_shape)
+            # exit()
 
             self.build(input_shape)
             self.build_aux(input_shape)
@@ -390,8 +400,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         else:
             start_epoch = 0
 
-        print("train_data shap")
-        print(train_data.shape)
+
         # batch size should be smaller / eq to the length of train_data
         if self.parameters["type"] == "vanilla":
             batch_size = min(batch_size, train_data.shape[0])
@@ -571,11 +580,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
                 theimage = unnormalize_colors(np.squeeze(theimage), self.parameters["mean"], self.parameters["std"])
                 
-
-                theimage = deenhance(theimage)
-
-                theimage = denormalize(theimage, self.parameters["orig_min"], self.parameters["orig_max"])
-                
+            
+                if "sokoban" not in self.parameters["generator"]:
+                    theimage = deenhance(theimage)
+                    theimage = denormalize(theimage, self.parameters["orig_min"], self.parameters["orig_max"])
+                    
                 theimage = np.clip(theimage, 0, 1)
                 
                 plt.imsave("THEPREDICTION-NoisyPartialDFA2.png", theimage)
@@ -585,7 +594,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             #if forwandb:
             to_send_towandb = logs_net
             to_send_towandb["epoch"] = epoch
-            #wandb.log(to_send_towandb)
+            wandb.log(to_send_towandb)
 
             losses.append(logs_net["loss"])
             logs.update(logs_net)
@@ -613,6 +622,8 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
                             
                             
+                            
+
                             net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
 
@@ -624,11 +635,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
                     logs = {}
 
-                    if epoch > 0 and epoch % 250 == 0:
+                    if epoch > 0 and epoch % 5 == 0:
                         print("lowest_elbolowest_elbolowest_elbolowest_elbo")
                         print(lowest_elbo)
 
-                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo="None", normal=True)
+                        self.save(path = the_exp_path, epoch=epoch, lowest_elbo=lowest_elbo, normal=True)
 
 
                     for k,v in generate_logs_vanilla(train_data, train_data_to).items():
@@ -655,6 +666,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                 logs = {}
 
                 for epoch in range(start_epoch, start_epoch+epoch):
+
                     np.random.shuffle(index_array)
 
                     indices_cache       = [ indices for indices in make_batch(index_array) ]
@@ -662,7 +674,8 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                     train_data_to_cache = [[ train_data_to[i] for i in indices_cache[j]] for j in range(len(indices_cache))]
 
                     clist.on_epoch_begin(epoch,logs)
-                    for train_subdata_cache,train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
+
+                    for train_subdata_cache, train_subdata_to_cache in zip(train_data_cache,train_data_to_cache):
                         #for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
                         #    #net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
 
@@ -683,10 +696,18 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         action_input_data = []
                         for item in train_subdata_cache:
 
+                            # print(item[1].shape)
+
+                            # exit()
+
                             action_input_data.append(item[1])
 
                         action_input_data = np.array(action_input_data)
     
+                        # print("x_data.shape")
+                        # print(x_data.shape)
+                        # exit()
+
                         net.train_on_batch([x_data, action_input_data], x_data)
                     
                     

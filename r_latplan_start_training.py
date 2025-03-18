@@ -114,7 +114,7 @@ args_dict = {
     dico_["width_height"]: None,
     dico_["nb_examples"]: None,
     "CubeSpaceAE_AMA4Conv": None,
-    "kltune2": None,
+    "kltune": None,
     "--dataset_folder": dataset_fold,
     "--type": args.type,
 }
@@ -150,4 +150,5 @@ errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + datas
 with open(outfile_str, "w") as outfile, open(errfile_str, "w") as errfile:
 
     result = subprocess.run('/workspace/R-latplan/train_kltune.py ' + args_list_str, shell = True, check = True, capture_output=False, stdout = outfile, stderr = errfile)
+    #result = subprocess.run(['python','/workspace/R-latplan/train_kltune.py ' + args_list_str], shell = True, check = False, capture_output = True)
 

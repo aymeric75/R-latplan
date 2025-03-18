@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+
+no_inv = " --translate-options --invariant-generation-max-candidates 0 "
+
+limit_time = " --search-time-limit 60s " + no_inv
+
+
 options = {
     "lmcut" : "--search astar(lmcut())",
     "blind" : "--search astar(blind())",
@@ -22,6 +28,9 @@ options = {
     "zopdb"  : "--search astar(zopdbs())",
 }
 
+for k, v in options.items():
+    options[k] = v + limit_time
+
 
 import argparse
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -36,6 +45,20 @@ parser.add_argument("typee", type=str, default=None, nargs="?",
                     help="vanilla or r latplan")
 parser.add_argument("sigma", type=float, default=None, nargs="?",
                     help="sigma of the Gaussian noise added to the normalized initial/goal images.")
+
+parser.add_argument("network_dir_spe", type=str, default=None, nargs="?",
+                    help="Optional: Path to the specific network directory.")
+
+
+
+['r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/domainCondBIS.pddl', 
+'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/pbs_lmcut/1_0', 
+'lmcut', 
+'1', 
+'spe_dom_dir ', 
+'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI', 
+'r_latplan']
+
 args = parser.parse_args()
 
 
@@ -60,17 +83,21 @@ float_formatter = lambda x: "%.3f" % x
 np.set_printoptions(threshold=sys.maxsize,formatter={'float_kind':float_formatter})
 
 
-def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
+def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None, network_dir_spe=None):
 
 
+
+    sigma = None
     network_dir = os.path.dirname(domainfile)
     domainfile_rel = os.path.relpath(domainfile, network_dir)
 
-    # print("begiin")
+    if args.network_dir_spe is not None:
+        network_dir = args.network_dir_spe
+
+    print("begiin")
 
     print(network_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless
     print(domainfile_rel) # domain.pddl
-
 
     def domain(path):
         dom_prefix = domainfile_rel.replace("/","_")
@@ -115,18 +142,121 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
     npzfile     = problem(ama(network(domain(heur(f"problem.npz")))))
     negfile     = problem(ama(network(domain(heur(f"problem.negative")))))
 
+
     valid = False
     found = False
     try:
-        ###### preprocessing ################################################################
+        ##### preprocessing ################################################################
         log(f"start generating problem")
         os.path.exists(ig) or np.savetxt(ig,[bits],"%d")
         echodo(["helper/ama3-problem.sh",ig,problemfile])
         log(f"finished generating problem")
 
+
+        # CODE FOR REMOVING THE NEGATIVE STATES IN THE INIT STATE (AND REMOVING NON PRESENT "EFFECTS" in the goal state)
+        # Save the current path
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Define the new path (relative to the current file)
+        translate_path = os.path.join(current_dir, "downward", "src", "translate")
+
+        # Temporarily add it to sys.path
+        sys.path.insert(0, translate_path)
+
+        try:
+            #import options  # Replace with actual module name
+            import FDgrounder
+            from FDgrounder import pddl_parser as pddl_pars
+
+
+            task = pddl_pars.open(
+                domain_filename=domainfile, task_filename=problemfile) # options.task
+                
+
+
+
+
+            ############ CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+            effectsToKeep = []
+            for trans_id, act in enumerate(task.actions):
+                tmp_act_effects = act.effects
+
+                for eff in tmp_act_effects:
+                    # print("EFF LITERAL")
+                    # print(eff.literal)
+                    integer = int(''.join(x for x in str(eff.literal) if x.isdigit()))
+                    transformed_name = ""
+                    if "Negated" in str(eff.literal):
+                        transformed_name += "del_"+str(integer)
+                    else:
+                        transformed_name += "add_"+str(integer)
+
+                    if transformed_name not in effectsToKeep:
+                        effectsToKeep.append(transformed_name)
+
+            goal_parts = list(task.goal.parts)
+
+            for part in goal_parts:
+                integer = int(''.join(x for x in str(part) if x.isdigit()))
+                transformed_name = ""
+                if "Negated" in str(part):
+                    transformed_name += "del_"+str(integer)
+                else:
+                    transformed_name += "add_"+str(integer)
+
+                print("transformed_name is {}".format(transformed_name))
+
+                if transformed_name not in effectsToKeep:
+                    goal_parts.remove(part)
+            task.goal.parts = tuple(goal_parts)
+
+
+            ############ END CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+
+
+
+
+            f = open(problemfile, "w")
+            task.domain_name = "latent"
+            f.write(task.get_pddl_problem())
+            f.close()
+
+        finally:
+            # Restore sys.path to avoid conflicts
+            sys.path.pop(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         print("R LATPLAN STUFF")
+        # print(problemfile)
+        # problemfile = "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/8_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domain_blind_problem.pddl"
+        print("problemfile")
         print(problemfile)
-        print(domainfile)
         print(options[heuristics])
 
         ###### do planning #############################################
@@ -141,6 +271,7 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
         #     return valid
         found = True
         log(f"start running a validator")
+        #echodo(["arrival", "-r", domainfile, problemfile, planfile, tracefile])
         echodo(["arrival", domainfile, problemfile, planfile, tracefile])
         log(f"finished running a validator")
 
@@ -168,6 +299,7 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
         log(f"start visually validating the plan image : transitions")
         # note: only puzzle, hanoi, lightsout have the custom validator, which are all monochrome.
         plan_images = sae.render(plan_images) # unnormalize the image
+
         return True
 
     finally:
@@ -189,7 +321,7 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None):
                 "csvfile":csvfile,
                 "pngfile":pngfile,
                 "jsonfile":jsonfile,
-                "statistics":json.loads(echo_out(["helper/fd-parser.awk", logfile])),
+                "statistics": "", #json.loads(echo_out(["helper/fd-parser.awk", logfile])),
                 "parameters":parameters,
                 "valid":valid,
                 "found":found,

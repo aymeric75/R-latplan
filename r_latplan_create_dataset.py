@@ -134,6 +134,16 @@ if args.task == "create_clean_traces":
 
     script_path = './r_latplan_datasets/pddlgym/pddlgym/genTraces.py'
 
+    traces_dir = "traceHanoi"
+
+    if args.type == "r_latplan":
+        traces_dir = "r_latplan_exps/"+args.domain
+    else:
+        traces_dir = "r_vanilla_latplan_exps/"+args.domain
+
+
+    
+
     args2 = [args.domain,  traces_dir]
 
     result = subprocess.run(['python', script_path] + args2, capture_output=False, text=True)

@@ -28,7 +28,7 @@
         "conv_depth": 3,
         "fc_width": 100,
         "fc_depth": 2,
-        "A": 1354,
+        "A": 1469,
         "aae_activation": "relu",
         "aae_width": 1000,
         "aae_depth": 2,

@@ -1,0 +1,186 @@
+{
+  "network": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25",
+  "problem": "1_2",
+  "domain": "pbs",
+  "noise": null,
+  "times": [
+    {
+      "message": "init",
+      "wall": 0,
+      "elapsed": 0
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 0.9927506446838379,
+      "elapsed": 0.9927506446838379
+    },
+    {
+      "message": "loaded sae",
+      "wall": 6.199340105056763,
+      "elapsed": 5.206589460372925
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 6.401777982711792,
+      "elapsed": 0.2024378776550293
+    },
+    {
+      "message": "loading init/goal",
+      "wall": 6.40180778503418,
+      "elapsed": 2.9802322387695312e-05
+    },
+    {
+      "message": "loaded init/goal",
+      "wall": 10.275476217269897,
+      "elapsed": 3.8736684322357178
+    },
+    {
+      "message": "start planning",
+      "wall": 10.275490522384644,
+      "elapsed": 1.430511474609375e-05
+    },
+    {
+      "message": "start generating problem",
+      "wall": 10.275619268417358,
+      "elapsed": 0.00012874603271484375
+    },
+    {
+      "message": "finished generating problem",
+      "wall": 10.468212127685547,
+      "elapsed": 0.19259285926818848
+    },
+    {
+      "message": "start planning",
+      "wall": 11.81691575050354,
+      "elapsed": 1.3487036228179932
+    },
+    {
+      "message": "finished planning",
+      "wall": 16.323688745498657,
+      "elapsed": 4.506772994995117
+    },
+    {
+      "message": "start running a validator",
+      "wall": 16.323744773864746,
+      "elapsed": 5.602836608886719e-05
+    },
+    {
+      "message": "finished running a validator",
+      "wall": 16.71124267578125,
+      "elapsed": 0.3874979019165039
+    },
+    {
+      "message": "start parsing the plan",
+      "wall": 16.711289405822754,
+      "elapsed": 4.673004150390625e-05
+    },
+    {
+      "message": "finished parsing the plan",
+      "wall": 16.82928705215454,
+      "elapsed": 0.11799764633178711
+    },
+    {
+      "message": "start plotting the plan",
+      "wall": 16.82932138442993,
+      "elapsed": 3.4332275390625e-05
+    },
+    {
+      "message": "finished plotting the plan",
+      "wall": 17.14189076423645,
+      "elapsed": 0.31256937980651855
+    },
+    {
+      "message": "start archiving the plan",
+      "wall": 17.142118215560913,
+      "elapsed": 0.00022745132446289062
+    },
+    {
+      "message": "finished archiving the plan",
+      "wall": 17.170735597610474,
+      "elapsed": 0.028617382049560547
+    },
+    {
+      "message": "start visually validating the plan image : transitions",
+      "wall": 17.170819520950317,
+      "elapsed": 8.392333984375e-05
+    }
+  ],
+  "heuristics": "blind",
+  "domainfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25//domain.pddl",
+  "problemfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.pddl",
+  "planfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.plan",
+  "tracefile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.trace",
+  "csvfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.csv",
+  "pngfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.png",
+  "jsonfile": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25/pbs/1_2/ama3_r_latplan_exps_sokoban_sokoban_complete_clean_faultless_withoutTI_N25_domain_blind_problem.json",
+  "statistics": "",
+  "parameters": {
+    "test_noise": false,
+    "test_hard": true,
+    "train_noise": true,
+    "train_hard": false,
+    "dropout_z": false,
+    "noise": 0.2,
+    "dropout": 0.2,
+    "optimizer": "radam",
+    "min_temperature": 0.5,
+    "epoch": 10000,
+    "gs_annealing_start": 0,
+    "gs_annealing_end": 1000,
+    "kl_cycle_start": 2000,
+    "clipnorm": 0.1,
+    "batch_size": 200,
+    "lr": 0.001,
+    "N": 25,
+    "zerosuppress": 0.1,
+    "densify": false,
+    "max_temperature": 5.0,
+    "conv_channel": 16,
+    "conv_channel_increment": 1,
+    "conv_kernel": 10,
+    "conv_pooling": 1,
+    "conv_per_pooling": 1,
+    "conv_depth": 3,
+    "fc_width": 100,
+    "fc_depth": 2,
+    "A": 4152,
+    "aae_activation": "relu",
+    "aae_width": 1000,
+    "aae_depth": 4,
+    "eff_regularizer": null,
+    "beta_d": 100,
+    "beta_z": 1,
+    "output": "GaussianOutput(sigma=0.1)",
+    "mode": "learn",
+    "track": "sokoban_image-20000-global-global-2-train",
+    "num_examples": 20000,
+    "aeclass": "CubeSpaceAE_AMA4Conv",
+    "comment": "kltune2",
+    "generator": "latplan.puzzles.sokoban",
+    "picsize": [
+      28,
+      28,
+      3
+    ],
+    "orig_max": null,
+    "orig_min": null,
+    "input_shape": 22,
+    "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
+    "hash": "ba2993f4c846471125b6c172ee3fc832",
+    "time_start": "",
+    "pdiff_z1z2_z0z3": 1,
+    "load_sae_weights": false,
+    "use_wandb": true,
+    "beta_z_and_beta_d": [
+      1,
+      100
+    ],
+    "beta_a_recons": 1,
+    "the_exp_path": "r_latplan_exps/sokoban/sokoban_complete_clean_faultless_withoutTI_N25",
+    "type": "r_latplan"
+  },
+  "valid": false,
+  "found": true,
+  "exhausted": false,
+  "cycle": 1
+}
