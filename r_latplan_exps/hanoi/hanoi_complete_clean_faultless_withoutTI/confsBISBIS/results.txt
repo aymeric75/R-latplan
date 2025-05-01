@@ -1,0 +1,2 @@
+config mean_ratio total_plans
+16__false__true__false__x_atoms_from_cond_effects_dt2_pbs_blind N/A 0

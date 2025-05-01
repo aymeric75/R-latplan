@@ -1,0 +1,190 @@
+{
+  "network": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI",
+  "problem": "2_0",
+  "domain": "pbs_blind",
+  "noise": null,
+  "times": [
+    {
+      "message": "init",
+      "wall": 0,
+      "elapsed": 0
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 0.8334155082702637,
+      "elapsed": 0.8334155082702637
+    },
+    {
+      "message": "loaded sae",
+      "wall": 5.389134883880615,
+      "elapsed": 4.555719375610352
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 5.389286518096924,
+      "elapsed": 0.00015163421630859375
+    },
+    {
+      "message": "loading init/goal",
+      "wall": 5.389362573623657,
+      "elapsed": 7.605552673339844e-05
+    },
+    {
+      "message": "loaded init/goal",
+      "wall": 7.110535144805908,
+      "elapsed": 1.721172571182251
+    },
+    {
+      "message": "start planning",
+      "wall": 7.1105945110321045,
+      "elapsed": 5.936622619628906e-05
+    },
+    {
+      "message": "start generating problem",
+      "wall": 7.110714912414551,
+      "elapsed": 0.00012040138244628906
+    },
+    {
+      "message": "finished generating problem",
+      "wall": 7.246926546096802,
+      "elapsed": 0.13621163368225098
+    },
+    {
+      "message": "start planning",
+      "wall": 7.282822847366333,
+      "elapsed": 0.03589630126953125
+    },
+    {
+      "message": "finished planning",
+      "wall": 8.072283267974854,
+      "elapsed": 0.7894604206085205
+    },
+    {
+      "message": "start running a validator",
+      "wall": 8.072350025177002,
+      "elapsed": 6.67572021484375e-05
+    },
+    {
+      "message": "finished running a validator",
+      "wall": 8.37352180480957,
+      "elapsed": 0.30117177963256836
+    },
+    {
+      "message": "start parsing the plan",
+      "wall": 8.373583316802979,
+      "elapsed": 6.151199340820312e-05
+    },
+    {
+      "message": "finished parsing the plan",
+      "wall": 8.472224950790405,
+      "elapsed": 0.09864163398742676
+    },
+    {
+      "message": "start plotting the plan",
+      "wall": 8.47226357460022,
+      "elapsed": 3.8623809814453125e-05
+    },
+    {
+      "message": "finished plotting the plan",
+      "wall": 8.620814800262451,
+      "elapsed": 0.14855122566223145
+    },
+    {
+      "message": "start archiving the plan",
+      "wall": 8.621041774749756,
+      "elapsed": 0.0002269744873046875
+    },
+    {
+      "message": "finished archiving the plan",
+      "wall": 8.629178285598755,
+      "elapsed": 0.008136510848999023
+    },
+    {
+      "message": "start visually validating the plan image : transitions",
+      "wall": 8.629356622695923,
+      "elapsed": 0.00017833709716796875
+    }
+  ],
+  "heuristics": "blind",
+  "domainfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/domainCondBIS.pddl",
+  "problemfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.pddl",
+  "planfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.plan",
+  "tracefile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.trace",
+  "csvfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.csv",
+  "pngfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.png",
+  "jsonfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confsBISBISBIS/6__true__false__true__x_all_atoms_dt2/pbs_blind/2_0/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainCondBIS_blind_problem.json",
+  "statistics": "",
+  "parameters": {
+    "test_noise": false,
+    "test_hard": true,
+    "train_noise": true,
+    "train_hard": false,
+    "dropout_z": false,
+    "noise": 0.2,
+    "dropout": 0.2,
+    "optimizer": "radam",
+    "min_temperature": 0.5,
+    "epoch": 1,
+    "gs_annealing_start": 0,
+    "gs_annealing_end": 1000,
+    "kl_cycle_start": 2000,
+    "clipnorm": 0.1,
+    "batch_size": 400,
+    "lr": 0.001,
+    "N": 16,
+    "zerosuppress": 0.1,
+    "densify": false,
+    "max_temperature": 5.0,
+    "conv_channel": 32,
+    "conv_channel_increment": 1,
+    "conv_kernel": 5,
+    "conv_pooling": 1,
+    "conv_per_pooling": 1,
+    "conv_depth": 3,
+    "fc_width": 100,
+    "fc_depth": 2,
+    "A": 1469,
+    "aae_activation": "relu",
+    "aae_width": 1000,
+    "aae_depth": 2,
+    "eff_regularizer": null,
+    "beta_d": 1000,
+    "beta_z": 1,
+    "output": "GaussianOutput(sigma=0.1)",
+    "mode": "learn",
+    "disks": 4,
+    "towers": 4,
+    "num_examples": 5000,
+    "aeclass": "CubeSpaceAE_AMA4Conv",
+    "comment": "kltune2",
+    "hash": "hanoi",
+    "generator": "latplan.puzzles.hanoi",
+    "picsize": [
+      25,
+      70
+    ],
+    "beta_a_recons": 1,
+    "load_sae_weights": false,
+    "use_wandb": true,
+    "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
+    "time_start": "",
+    "do_sweep": true,
+    "orig_max": 1.0,
+    "orig_min": 0.06550595238095239,
+    "beta_z_and_beta_d": [
+      1,
+      1000
+    ],
+    "pdiff_z1z2_z0z3": [
+      1,
+      1000
+    ],
+    "the_exp_path": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI",
+    "type": "r_latplan",
+    "beta_ama_recons": 1
+  },
+  "valid": false,
+  "found": true,
+  "exhausted": false,
+  "cycle": 1
+}

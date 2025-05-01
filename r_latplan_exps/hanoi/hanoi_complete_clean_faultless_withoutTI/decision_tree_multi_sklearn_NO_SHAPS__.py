@@ -1156,10 +1156,10 @@ for num_action in range(0, 22):
                     for cond in pathh[:-1]:
                         if ">" in cond:
                             tmp.append(format_precond(cond.split(" > ")[0].replace("(", "").replace(")", "")))
-                        else: # "<=" in cond
-                            tmp.append(format_precond(cond.split(" <= ")[0].replace("(", "").replace(")", ""), reverse=True))
-                            #tmp.append(format_precond(cond.split(" <= ")[0].replace("(", "").replace(")", "").replace("not", "")))
-                            #break
+                        # else: # "<=" in cond
+                        #     tmp.append(format_precond(cond.split(" <= ")[0].replace("(", "").replace(")", ""), reverse=True))
+                        #     #tmp.append(format_precond(cond.split(" <= ")[0].replace("(", "").replace(")", "").replace("not", "")))
+                        #     #break
                     tmp.append("#samples: "+str(integer))
                     if len(tmp) > 0:
                         
@@ -1286,7 +1286,7 @@ def add_parenthesis(liste):
 ###########################  WRITE THE PDDL   ################################
 #######################  and LEARN THE SECOND TREE ###########################
 ##############################################################################
-with open(base_dir+"/confsBISBIS/"+dir_name+"/"+"domainCondBIS.pddl", "w") as f:
+with open(base_dir+"/confsBISBISBISBIS/"+dir_name+"/"+"domainCondBIS.pddl", "w") as f:
 #with open(base_dir+"/"+"domainCondBIS.pddl", "w") as f:
 
 
@@ -1696,12 +1696,9 @@ with open(base_dir+"/confsBISBIS/"+dir_name+"/"+"domainCondBIS.pddl", "w") as f:
                 if len(preconds_sets) > 0:
 
 
-
                     two_tabs_space  = "         "
                     tmp_str = two_tabs_space+"(when "
                     
-
-
                     if len(preconds_sets) == 1:
                         
                         precond_set = preconds_sets[0]

@@ -1,31 +1,53 @@
-from sympy import symbols
-from sympy.logic.boolalg import Or, And, Not, to_cnf
+import numpy as np
 
-# Original list of lists
-clauses = [
-    ['(not (z13))', '(not (z5))', '(not (z7))', '(z6)', '(z4)', '(z2)'],
-    ['(not (z0))', '(not (z13))', '(z6)', '(z7)', '(z4)', '(z2)'],
-    ['(z11)', '(z13)', '(z3)', '(z4)', '(z2)'],
-    ['(not (z11))', '(not (z5))', '(z13)', '(z3)', '(z4)', '(z6)', '(z4)', '(z2)'],
-    ['(not (z11))', '(not (z6))', '(z13)', '(z3)', '(z4)', '(z2)']
-]
 
-# Extract unique variables
-variables = set()
-for clause in clauses:
-    for literal in clause:
-        var_name = literal.replace("not ", "").replace(")", "").replace("(", "").strip()
-        variables.add(var_name)
+######  the fnal_set , i.e. what we want to put in the OR
+candidates = np.array([
+    [0,0,0,1,0],
+    [1,0,1,0,0],
+    [0,0,0,0,1],
+    [0,1,0,0,0],
+])
 
-# Create symbol mappings
-symbol_map = {var: symbols(var) for var in variables}
 
-# Convert clauses to sympy expressions
-expression = Or(*[And(*[Not(symbol_map[literal.replace("not ", "").replace(")", "").replace("(", "").strip()])
-                         if "(" in literal else symbol_map[literal.strip()]
-                         for literal in clause]) for clause in clauses])
+##### s_orig, i.e. the preconditions sets
+targets = np.array([
+    [1,0,1,0,1],
+    [0,0,1,0,0],
+    [1,1,1,0,0]
+])
 
-# Convert to Conjunctive Normal Form (CNF)
-cnf_expression = to_cnf(expression, simplify=True)
 
-print(cnf_expression)
+def count_targets_entailing_each_candidate(candidates, targets):
+    """
+    Returns a 1D array of length num_candidates,
+    where each value is the number of targets that entail that candidate.
+    """
+    num_candidates = candidates.shape[0]
+    num_targets = targets.shape[0]
+
+    # Expand dims for broadcasting: (num_targets, 1, 32) & (1, num_candidates, 32)
+    # Resulting shape: (num_targets, num_candidates, 32)
+    comparison = (targets[:, None, :] & candidates[None, :, :]) == candidates[None, :, :]
+
+    # Now check for all bits matching across the last axis
+    entailed_matrix = np.all(comparison, axis=2)  # shape: (num_targets, num_candidates)
+
+    # Count for each candidate how many targets entail it
+    count_per_candidate = np.sum(entailed_matrix, axis=0)  # shape: (num_candidates,)
+
+
+    return np.argmax(count_per_candidate)
+    
+
+#return count_per_candidate
+
+
+counts = count_targets_entailing_each_candidate(candidates, targets)
+
+print(np.argmax(counts))
+
+exit()
+
+for i, count in enumerate(counts):
+    print(f"Candidate {i} is entailed by {count} targets.")
