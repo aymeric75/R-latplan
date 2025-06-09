@@ -1491,11 +1491,11 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         #       
         # path+"p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz"
         if normal == True:
-            np.savez_compressed(path+"/p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z0_net[0].get_weights())
-            np.savez_compressed(path+"/p_a_z1_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z1_net[0].get_weights())
+            np.savez_compressed(path+"/training_weights/p_a_z0_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z0_net[0].get_weights())
+            np.savez_compressed(path+"/training_weights/p_a_z1_net-"+str(epoch)+"-"+str(lowest_elbo)+".npz",*self.p_a_z1_net[0].get_weights())
         else:
-            np.savez_compressed(path+"/p_a_z0_net-"+str(epoch)+".npz",*self.p_a_z0_net[0].get_weights())
-            np.savez_compressed(path+"/p_a_z1_net-"+str(epoch)+".npz",*self.p_a_z1_net[0].get_weights())
+            np.savez_compressed(path+"/training_weights/p_a_z0_net-"+str(epoch)+".npz",*self.p_a_z0_net[0].get_weights())
+            np.savez_compressed(path+"/training_weights/p_a_z1_net-"+str(epoch)+".npz",*self.p_a_z1_net[0].get_weights())
 
     def _load(self,path=""):
         # loaded separately so that we can switch between loading or not loading it.
@@ -1582,6 +1582,79 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         loss = K.batch_flatten(loss)
         loss = K.sum(loss, axis=-1)
         return loss
+
+
+    def return_pairwise_jaccard(self, ref):
+        """
+        Compute unique pairwise soft Jaccard distances between rows of a 2D TensorFlow tensor.
+        Compatible with TF 1.x and graph mode.
+        
+        Parameters:
+            ref (tf.Tensor): 2D tensor of shape (batch_size, feature_dim)
+            
+        Returns:
+            tf.Tensor: 1D tensor of unique pairwise Jaccard distances (upper triangle, no diagonal)
+        """
+        x1 = tf.expand_dims(ref, 1)  # (N, 1, D)
+        x2 = tf.expand_dims(ref, 0)  # (1, N, D)
+
+        intersection = tf.reduce_sum(x1 * x2, axis=-1)  # (N, N)
+        union = tf.reduce_sum(x1 + x2 - x1 * x2, axis=-1)  # (N, N)
+        soft_jaccard = 1.0 - (intersection / (union + 1e-7))  # (N, N)
+
+        # Compute indices for the upper triangle (excluding diagonal)
+        n = tf.shape(ref)[0]
+        i, j = tf.meshgrid(tf.range(n), tf.range(n), indexing='ij')
+        upper_triangle_mask = tf.greater(j, i)  # Mask for upper triangle
+
+        # Use boolean_mask to extract upper triangle elements
+        pairwise_distances = tf.boolean_mask(soft_jaccard, upper_triangle_mask)
+
+        return pairwise_distances
+
+
+    def return_mean_jaccard(self, ref, *masks):
+
+        # total added variance over all the batch
+        total_means = 0.
+
+        counter = 0
+
+        jaccards_means = []
+
+        # for each mask (i.e. for each high lvl action)
+        for cc, m in enumerate(masks):
+
+            # m is of shape (batch_size, 1), we turn it to be of shape (batch_size)
+            flattened_mask = tf.reshape(m, [-1]) #  !!!!!!! check the dimensions with simple example
+
+            # Apply the mask over the ref tensor
+            sub_tensor = tf.cast( tf.boolean_mask(ref, flattened_mask), tf.float32 )
+
+            # Put NaN values (if any) as 0s
+            tensor_without_nans = tf.where(tf.is_nan(sub_tensor), tf.zeros_like(sub_tensor), sub_tensor)
+
+            jaccards = self.return_pairwise_jaccard(tensor_without_nans)
+
+            # Compute the variance of the filtered tensor
+            jaccards_mean = tf.math.reduce_mean(jaccards) # !!!!!!!!! check outside training
+
+            # Put NaN values (if any) as 0s
+            jaccards_mean = tf.where(tf.is_nan(jaccards_mean), tf.zeros_like(jaccards_mean), jaccards_mean)
+
+            # add the mean to the total
+            #total_means += jaccards_mean*w
+
+            jaccards_means.append(jaccards_mean)
+
+            counter += 1
+
+        if counter == 0:
+            return 0
+
+        # return the mean of the variance
+        return jaccards_means # total_means # / counter
+
 
 
 
@@ -1697,6 +1770,299 @@ class BaseActionMixinAMA4Plus(BidirectionalMixin, BaseActionMixin):
         # self._encode_prob_aae = Model(x, p_aae) # note : directly through the encoder, not AAE
 
         return
+
+
+
+
+    ######      CODE FOR INTRODUCING A JACCCARD LOSS 
+
+    # def _build_primary(self,input_shape):
+
+    #     x = Input(shape=(2,*input_shape))
+    #     action_input = Input(shape=(self.parameters["A"],)) # shape is # (? ,24)
+
+
+    #     #### USED FOR THE JACCARD DISTANCES ####
+    #     zeros = Input(shape=(self.parameters["N"], ))
+    #     ones = Input(shape=(self.parameters["N"], ))
+
+
+    #     theepoch = Input(shape=(1, ))
+    #     theepoch_ = tf.math.reduce_mean(theepoch)
+
+
+    #     # effects / preconditions
+    #     add_effs = self._apply(zeros,action_input) #### (batch_size, 16)
+    #     del_effs = tf.math.subtract(ones, self._apply(ones, action_input)) # 1 - 
+    #     pos_precs = self._regress(zeros,action_input)        
+    #     neg_precs = tf.math.subtract(ones, self._regress(ones,action_input))
+        
+
+    #     # print(add_effs)
+    #     # print(del_effs) # Tensor("Sub:0", shape=(?, 16), dtype=float32)
+
+    #     _, x_pre, x_suc = dapply(x)
+    #     z, z_pre, z_suc = dapply(x, self._encode)
+    #     y, y_pre, y_suc = dapply(z, self._decode)
+    #     # to generate a correct ELBO, input to action should be deterministic
+    #     (l_pre,     ), _ = z_pre.variational_source # see Variational class
+    #     (l_suc,     ), _ = z_suc.variational_source # see Variational class
+    #     p_pre = wrap(l_pre, K.sigmoid(l_pre))
+    #     p_suc = wrap(l_suc, K.sigmoid(l_suc))
+
+
+    #     ##########################   COMPUTING THE MEAN JACARD DISTANCE BTWEEN LL ACTIONS OF SAME HL ACTION  #################
+
+    #     #### 1) Masks of the High Level Actions
+
+    #     mask1 = Input(shape=(1,))
+    #     mask2 = Input(shape=(1,))
+    #     mask3 = Input(shape=(1,))
+    #     mask4 = Input(shape=(1,))    
+    #     mask5 = Input(shape=(1,))
+    #     mask6 = Input(shape=(1,))
+    #     mask7 = Input(shape=(1,))
+    #     mask8 = Input(shape=(1,))
+    #     mask9 = Input(shape=(1,))
+    #     mask10 = Input(shape=(1,))
+    #     mask11 = Input(shape=(1,))
+    #     mask12 = Input(shape=(1,))
+    #     mask13 = Input(shape=(1,))
+    #     mask14 = Input(shape=(1,))
+    #     mask15 = Input(shape=(1,))
+    #     mask16 = Input(shape=(1,))
+    #     mask17 = Input(shape=(1,))
+    #     mask18 = Input(shape=(1,))
+    #     mask19 = Input(shape=(1,))
+    #     mask20 = Input(shape=(1,))
+    #     mask21 = Input(shape=(1,))
+    #     mask22 = Input(shape=(1,))
+
+    #     args = (mask1, mask2, mask3, mask4, mask5, mask6, mask7, mask8, mask9, mask10, 
+    #             mask11, mask12, mask13, mask14, mask15, mask16, mask17, mask18, mask19, mask20, 
+    #             mask21, mask22)
+
+    #     #### 2) computing the Jacard Distances
+
+    #     effects_ = tf.concat([add_effs, del_effs], axis=1)
+    #     preconds_ = tf.concat([pos_precs, neg_precs], axis=1)
+
+
+    #     # note: _action takes a probability, but feeding 0/1 data in test time is fine (0/1 can be seen as probabilities)
+    #     action    = action_input
+    #     z_suc_aae = self._apply  (z_pre,action)
+    #     z_pre_aae = self._regress(z_suc,action)
+    #     y_suc_aae = self._decode(z_suc_aae)
+    #     y_pre_aae = self._decode(z_pre_aae)
+    #     z_aae = dmerge(z_pre_aae, z_suc_aae)
+    #     y_aae = dmerge(y_pre_aae, y_suc_aae)
+
+    #     #(l_action,  ), _ = action.variational_source # see Variational class
+    #     (l_suc_aae, ), _ = z_suc_aae.variational_source # see Variational class
+    #     (l_pre_aae, ), _ = z_pre_aae.variational_source # see Variational class
+
+    #     p         = dmerge(p_pre, p_suc)
+    #     p_pre_aae = wrap(l_pre_aae, K.sigmoid(l_pre_aae))
+    #     p_suc_aae = wrap(l_suc_aae, K.sigmoid(l_suc_aae))
+    #     p_aae     = dmerge(p_pre_aae, p_suc_aae)
+
+
+    #     pdiff_z1z2 = K.mean(K.abs(p_suc - p_suc_aae),axis=-1)
+    #     pdiff_z0z3 = K.mean(K.abs(p_pre - p_pre_aae),axis=-1)
+    #     pdiff_z0z1 = K.mean(K.abs(p_pre - p_suc),axis=-1)
+    #     pdiff_z0z2 = K.mean(K.abs(p_pre - p_suc_aae),axis=-1)
+
+    #     kl_z0 = z_pre.loss(l_pre, p=self.parameters["zerosuppress"])
+    #     kl_z1 = z_suc.loss(l_suc, p=self.parameters["zerosuppress"])
+        
+    #     # kl_a_z0 = action.loss(l_action, logit_p=Sequential(self.p_a_z0_net)(z_pre))
+    #     # kl_a_z1 = action.loss(l_action, logit_p=Sequential(self.p_a_z1_net)(z_suc))
+        
+
+    #     kl_a_z0 = self.SpecificLoss(action_input, logit_p=Sequential(self.p_a_z0_net)(z_pre))
+    #     kl_a_z1 = self.SpecificLoss(action_input, logit_p=Sequential(self.p_a_z1_net)(z_suc))
+
+
+        
+    #     kl_z1z2 = z_pre_aae.loss(l_pre, logit_p=l_pre_aae)
+    #     kl_z0z3 = z_suc_aae.loss(l_suc, logit_p=l_suc_aae)
+    #     _rec = self.output.loss
+    #     x0y0 = _rec(x_pre,y_pre)
+    #     x1y1 = _rec(x_suc,y_suc)
+    #     x0y3 = _rec(x_pre,y_pre_aae)
+    #     x1y2 = _rec(x_suc,y_suc_aae)
+
+    #     #self.parameters["pdiff_z1z2_z0z3"] = [ 1, 1000 ]
+
+    #     self.parameters["beta_a_recons"] = 1
+
+    #     self.parameters["beta_z"], self.parameters["beta_d"] = self.parameters["beta_z_and_beta_d"]
+
+    #     ama3_forward_loss1  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + self.parameters["beta_d"] * kl_z1z2 + x1y1 + pdiff_z1z2*self.parameters["pdiff_z1z2_z0z3"]
+    #     ama3_forward_loss2  = self.parameters["beta_z"] * kl_z0 + x0y0 + kl_a_z0 + self.parameters["beta_a_recons"] * x1y2
+    #     ama3_backward_loss1 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + self.parameters["beta_d"] * kl_z0z3 + x0y0 + pdiff_z0z3*self.parameters["pdiff_z1z2_z0z3"]
+    #     ama3_backward_loss2 = self.parameters["beta_z"] * kl_z1 + x1y1 + kl_a_z1 + self.parameters["beta_a_recons"] * x0y3
+    #     #total_loss = (ama3_forward_loss1 + ama3_forward_loss2 + ama3_backward_loss1 + ama3_backward_loss2)/4 
+
+
+        
+    #     #total_loss = (ama3_forward_loss1 + ama3_forward_loss2 + ama3_backward_loss1 + ama3_backward_loss2)/4 
+
+    #     total_loss_orig = tf.Variable([0.0])
+
+    #     total_loss_orig += (ama3_forward_loss1 + ama3_forward_loss2 + ama3_backward_loss1 + ama3_backward_loss2) / 4
+
+    #     newloss_starting_epoch, newloss_ending_epoch = self.parameters["newloss_starting_epoch__AND__newloss_ending_epoch"]
+
+
+    #     fac_step = tf.Variable([0.0])
+    #     epoch_from_newloss_starting_epoch = tf.Variable([0.0])
+
+
+
+    #     fac = tf.Variable([0.0])
+    #     total_fraction_loss = tf.Variable([0.0])
+
+    #     # in (epochY - epochX) I want fac to go from 0 to 0.75
+    #     # annealing coef
+    #     # 50 => 150 , 0 => 0.75, 
+    #     #    
+
+    #     ### Step in the [0, 0.75] range
+    #     fac_step +=  0.75 / (newloss_ending_epoch - newloss_starting_epoch) #(example: = 0.015)
+
+    #     ### Epoch where the additional loss starts to act
+    #     epoch_from_newloss_starting_epoch += tf.math.maximum(0., theepoch_ - newloss_starting_epoch)
+
+    #     ### fraction (percentage) of the total_vanilla_loss to USE for making the additional loss
+    #     fac += tf.math.minimum(fac_step * epoch_from_newloss_starting_epoch, 0.75)
+
+
+
+    #     # ######   
+
+    #     if self.parameters["use_temperature"]:
+    #         ### Retrieve the fraction of the actual total vanilla loss
+    #         total_fraction_loss += fac * total_loss_orig
+    #     else:
+    #         total_fraction_loss += 0.1 * total_loss_orig
+
+
+    #     #regulizer = (total_loss_orig / self.parameters["denominator"])
+
+
+    #     additional_loss = tf.Variable([0.0])
+
+    #     # if self.parameters["jaccard_on"] == "effects":
+    #     #     ### MEAN JACCARD DISTANCE FOR EFFS
+    #     #     mean_jaccard_effs = self.return_mean_jaccard(effects_, *args)
+    #     #     additional_loss += mean_jaccard_effs*total_fraction_loss
+
+    #     # elif self.parameters["jaccard_on"] == "preconds":
+    #     #     ### MEAN JACCARD DISTANCE FOR PRECONDS
+    #     #     mean_jaccard_preconds = self.return_mean_jaccard(preconds_, *args)
+    #     #     additional_loss += mean_jaccard_preconds*total_fraction_loss
+
+    #     #elif self.parameters["jaccard_on"] == "both":
+    #     both_vec = tf.concat([effects_, preconds_], axis=1)
+    #     means_jaccard_both = self.return_mean_jaccard(both_vec, *args)
+
+    #     mean_jaccard_total = 0.
+    #     # 
+    #     for ccc, mean_jac in enumerate(means_jaccard_both):
+
+    #         mean_jaccard_total += self.parameters["weights_each_hl_action"][ccc]*mean_jac
+
+    #         # if ccc == 0:
+    #         #     self.add_metric("mean_jac_0", mean_jac)
+    #         # if ccc == 8:
+    #         self.add_metric("mean_jac_"+str(ccc), mean_jac)
+
+
+
+    #     additional_loss += mean_jaccard_total*total_fraction_loss
+
+
+
+
+
+
+
+
+
+
+    #     # Norming the additional loss
+    #     #additional_loss *= (total_fraction_loss / self.parameters["denominator"])
+
+    #     total_loss = total_loss_orig + additional_loss
+
+
+    #     ama3_forward_elbo1  = kl_z0 + x0y0 + kl_a_z0 + kl_z1z2 + x1y1 + pdiff_z1z2
+    #     ama3_forward_elbo2  = kl_z0 + x0y0 + kl_a_z0 + x1y2
+    #     ama3_backward_elbo1 = kl_z1 + x1y1 + kl_a_z1 + kl_z0z3 + x0y0 + pdiff_z0z3
+    #     ama3_backward_elbo2 = kl_z1 + x1y1 + kl_a_z1 + x0y3
+    #     elbo = (ama3_forward_elbo1 + ama3_forward_elbo2 + ama3_backward_elbo1 + ama3_backward_elbo2)/4
+    #     # self.add_metric("pdiff_z1z2",pdiff_z1z2)
+    #     # self.add_metric("pdiff_z0z3",pdiff_z0z3)
+
+
+    #     # self.add_metric("pdiff_z0z1",pdiff_z0z1)
+    #     # self.add_metric("pdiff_z0z2",pdiff_z0z2)
+    #     # self.add_metric("kl_z0",kl_z0)
+    #     # self.add_metric("kl_z1",kl_z1)
+    #     # self.add_metric("kl_a_z0",kl_a_z0)
+    #     # self.add_metric("kl_a_z1",kl_a_z1)
+    #     # self.add_metric("kl_z1z2",kl_z1z2)
+    #     # self.add_metric("kl_z0z3",kl_z0z3)
+    #     # self.add_metric("x0y0",x0y0)
+    #     # self.add_metric("x1y1",x1y1)
+
+
+    #     # self.add_metric("x0y3",x0y3)
+    #     # self.add_metric("x1y2",x1y2)
+    #     # self.add_metric("elbo",elbo)
+
+
+    #     # if self.parameters["jaccard_on"] == "both":
+    #     #     self.add_metric("mean_jaccard_total", mean_jaccard_total)
+        
+    #     # self.add_metric("additional_loss", additional_loss)
+        
+    #     # self.add_metric("total_fraction_loss", total_fraction_loss)
+    #     # self.add_metric("total_loss_orig", total_loss_orig)
+        
+        
+    #     def loss(*args):
+    #         return total_loss
+    #     self.loss = loss
+
+
+    #     # effects__ = Lambda(lambda x: tf.concat(x, axis=1))([add_effs, del_effs])
+    #     # preconds__ = Lambda(lambda x: tf.concat(x, axis=1))([pos_precs, neg_precs])
+
+
+    #     # note: original z does not work because Model.save only saves the weights that are included in the computation graph between input and output.
+    #     self.net = Model(inputs=[x,
+    #         action_input,
+    #         zeros,
+    #         ones,
+    #         theepoch,
+    #         *args
+    #         ], outputs=[y_aae, add_effs])
+
+    #     self.encoder     = Model(x, z) # note : directly through the encoder, not AAE
+    #     self.autoencoder = Model(x, y) # note : directly through the decoder, not AAE
+
+
+    #     # verify the note above : self.autoencoder.weights does not contain weights for AAE
+    #     # print(self.net.weights)
+    #     # print(self.autoencoder.weights)
+
+    #     # # for plotting
+    #     # self._encode_prob     = Model(x, p) # note : directly through the encoder, not AAE
+    #     # self._encode_prob_aae = Model(x, p_aae) # note : directly through the encoder, not AAE
+
+    #     return
 
     def evaluate(self,*args,**kwargs):
         metrics = { k:v for k,v in zip(self.net.metrics_names,

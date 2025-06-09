@@ -28,8 +28,11 @@ options = {
     "zopdb"  : "--search astar(zopdbs())",
 }
 
-for k, v in options.items():
-    options[k] = v + limit_time
+
+
+##################  CAREFUL !!!!!!!!!!!!!!!!  THIS OFTEN PREVENTs PLANS TO BE GENERATED !!!!!!!!!!!!!!!
+# for k, v in options.items():
+#     options[k] = v + limit_time
 
 
 import argparse
@@ -51,13 +54,13 @@ parser.add_argument("network_dir_spe", type=str, default=None, nargs="?",
 
 
 
-['r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/domainCondBIS.pddl', 
-'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/pbs_lmcut/1_0', 
-'lmcut', 
-'1', 
-'spe_dom_dir ', 
-'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI', 
-'r_latplan']
+# ['r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/domainCondBIS.pddl', 
+# 'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/confs/0__true__true__true__x_all_atoms_dt2/pbs_lmcut/1_0', 
+# 'lmcut', 
+# '1', 
+# 'spe_dom_dir ', 
+# 'r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI', 
+# 'r_latplan']
 
 args = parser.parse_args()
 
@@ -142,6 +145,8 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None, network_
     npzfile     = problem(ama(network(domain(heur(f"problem.npz")))))
     negfile     = problem(ama(network(domain(heur(f"problem.negative")))))
 
+    
+
 
     valid = False
     found = False
@@ -176,42 +181,42 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None, network_
 
 
 
-            ############ CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
-            effectsToKeep = []
-            for trans_id, act in enumerate(task.actions):
-                tmp_act_effects = act.effects
+            # ############ CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+            # effectsToKeep = []
+            # for trans_id, act in enumerate(task.actions):
+            #     tmp_act_effects = act.effects
 
-                for eff in tmp_act_effects:
-                    # print("EFF LITERAL")
-                    # print(eff.literal)
-                    integer = int(''.join(x for x in str(eff.literal) if x.isdigit()))
-                    transformed_name = ""
-                    if "Negated" in str(eff.literal):
-                        transformed_name += "del_"+str(integer)
-                    else:
-                        transformed_name += "add_"+str(integer)
+            #     for eff in tmp_act_effects:
+            #         # print("EFF LITERAL")
+            #         # print(eff.literal)
+            #         integer = int(''.join(x for x in str(eff.literal) if x.isdigit()))
+            #         transformed_name = ""
+            #         if "Negated" in str(eff.literal):
+            #             transformed_name += "del_"+str(integer)
+            #         else:
+            #             transformed_name += "add_"+str(integer)
 
-                    if transformed_name not in effectsToKeep:
-                        effectsToKeep.append(transformed_name)
+            #         if transformed_name not in effectsToKeep:
+            #             effectsToKeep.append(transformed_name)
 
-            goal_parts = list(task.goal.parts)
+            # goal_parts = list(task.goal.parts)
 
-            for part in goal_parts:
-                integer = int(''.join(x for x in str(part) if x.isdigit()))
-                transformed_name = ""
-                if "Negated" in str(part):
-                    transformed_name += "del_"+str(integer)
-                else:
-                    transformed_name += "add_"+str(integer)
+            # for part in goal_parts:
+            #     integer = int(''.join(x for x in str(part) if x.isdigit()))
+            #     transformed_name = ""
+            #     if "Negated" in str(part):
+            #         transformed_name += "del_"+str(integer)
+            #     else:
+            #         transformed_name += "add_"+str(integer)
 
-                print("transformed_name is {}".format(transformed_name))
+            #     print("transformed_name is {}".format(transformed_name))
 
-                if transformed_name not in effectsToKeep:
-                    goal_parts.remove(part)
-            task.goal.parts = tuple(goal_parts)
+            #     if transformed_name not in effectsToKeep:
+            #         goal_parts.remove(part)
+            # task.goal.parts = tuple(goal_parts)
 
 
-            ############ END CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+            # ############ END CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
 
 
 

@@ -74,6 +74,17 @@ This dict can be used while building the network, making it easier to perform a 
                     log_dir     = self.path,
                     write_graph = False)
             ]
+
+
+            self.parameters["weights_each_hl_action"] = []
+
+            self.parameters["newloss_starting_epoch__AND__newloss_ending_epoch"] = [0, 700]
+
+            self.parameters["jaccard_on"] = "both"
+
+            self.parameters["use_temperature"] = False
+
+
         else:
             self.path = path
             self.callbacks = []
@@ -177,9 +188,9 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
         for i, net in enumerate(self.nets):
             
             if normal:
-                net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+".h5")
+                net.save_weights(path+"/training_weights/net"+str(i)+"-"+str(epoch)+".h5")
             else:
-                net.save_weights(path+"/net"+str(i)+"-"+str(epoch)+"-"+str(lowest_elbo)+".h5")
+                net.save_weights(path+"/training_weights/net"+str(i)+"-"+str(epoch)+"-"+str(lowest_elbo)+".h5")
 
         with open(path+"/"+"aux.json", "w") as f:
             json.dump({"parameters":self.parameters,
@@ -547,21 +558,61 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
             actions_array = np.array(actions_array)
 
+
+
+            liste_masks = []
+            for iiii in range(22):
+                tmp_mask = actions_array[:, iiii] == 1
+                liste_masks.append(tmp_mask)
+            args = tuple(liste_masks)
+
+
+
+            zeros_ = np.zeros((len(actions_array), self.parameters["N"]))
+            ones_ = np.ones((len(actions_array), self.parameters["N"]))
+
             losses = []
             logs   = {}
+
+            theepoch = np.full((len(actions_array),), epoch)
             
             # print(images_array.shape) # (4500, 2, 48, 48, 1)
             # print(actions_array.shape) # (4500, 24)
-            
+            zerossss_ = np.zeros((len(actions_array), self.parameters["N"] // 2))
             # NEW VERSION
-            evals = self.nets[0].evaluate([images_array, actions_array],
-                                            images_array,
-                                            batch_size=batch_size,
-                                            verbose=0)
+            # evals = self.nets[0].evaluate([
+            #                                 images_array,
+            #                                 actions_array,
+            #                                 zeros_,
+            #                                 ones_,
+            #                                 theepoch,
+            #                                 *args
+            #                                 ],
+            #                                 [images_array, zerossss_],
+            #                                 batch_size=batch_size,
+            #                                 verbose=0)
+
+            evals = self.nets[0].evaluate([
+                                    images_array,
+                                    actions_array,
+                                    ],
+                                    images_array,
+                                    batch_size=batch_size,
+                                    verbose=0)
+
+            # preds, add_effs = self.nets[0].predict([
+            #     images_array, 
+            #     actions_array, 
+            #     zeros_,
+            #     ones_,
+            #     theepoch,
+            #     *args])
+                
+            preds = self.nets[0].predict([
+                images_array, 
+                actions_array])
 
 
-            preds = self.nets[0].predict([images_array, actions_array])
-            print("PREDS") # (600, 2, 48, 48, 1)
             # (1, 2, 25, 70, 3)
 
             print(preds.shape)
@@ -622,6 +673,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         for net,train_subdata_batch_cache,train_subdata_to_batch_cache in zip(self.nets, train_subdata_cache,train_subdata_to_cache):
                             
                             
+
                             
 
                             net.train_on_batch(train_subdata_batch_cache, train_subdata_to_batch_cache)
@@ -681,11 +733,27 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
                         net = self.nets[0]
 
-                        #self.parameters["present_xys"] = self.parameters["x_and_ys"][batch_count]
+                        # # Masks for each High Lvl action
+                        # action_input_data = []
+                        # for indd, item in enumerate(train_subdata_cache):
+                        #     action_input_data.append(item[2])
+                        # action_input_data = np.array(action_input_data)
+                        # liste_masks = []
+                        # for iiii in range(22):
+                        #     tmp_mask = action_input_data[:, iiii] == 1
+                        #     liste_masks.append(tmp_mask)
+                        # args = tuple(liste_masks)
+                        
 
-                        # print("SHAPE SUBDATA")
-                        # print(len(train_subdata_cache))
-                        # # 
+                        # print("liste_masks")
+                        # print(liste_masks) # tells for each high level action, which low level actions are "concerned"
+
+
+                        zeros = np.zeros((batch_size, self.parameters["N"]))
+    
+                        ones = np.ones((batch_size, self.parameters["N"]))
+
+                        theepoch = np.full((batch_size, ), epoch)
 
                         # images (each item[0] of train_subdata_cache)
                         #x_data = np.array([np.expand_dims(item[0], axis=-1) for item in train_subdata_cache])
@@ -695,11 +763,6 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         # actions (each item[1] of train_subdata_cache)
                         action_input_data = []
                         for item in train_subdata_cache:
-
-                            # print(item[1].shape)
-
-                            # exit()
-
                             action_input_data.append(item[1])
 
                         action_input_data = np.array(action_input_data)
@@ -707,9 +770,22 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         # print("x_data.shape")
                         # print(x_data.shape)
                         # exit()
+                        # size batch, 16
+                        zerossss = np.zeros((batch_size, self.parameters["N"] // 2))
 
-                        net.train_on_batch([x_data, action_input_data], x_data)
-                    
+                        # net.train_on_batch([x_data, 
+                        #     action_input_data, 
+                        #     zeros,
+                        #     ones,
+                        #     theepoch,
+                        #     *args], [x_data, zerossss])
+                                            
+                        net.train_on_batch([x_data, 
+                                            action_input_data, 
+                                            ], x_data)
+                                            
+
+
                     
                     logs = {}
 
@@ -723,7 +799,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                     if self.nets[0].stop_training:
                         break
 
-                    if epoch > 0 and epoch % 250 == 0:
+                    if epoch > 0 and epoch % 200 == 0: # 
                         print("lowest_elbolowest_elbolowest_elbolowest_elbo")
                         print(lowest_elbo)
 

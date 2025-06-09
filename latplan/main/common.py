@@ -972,26 +972,62 @@ def run(path,transitions,extra=None):
     # print('path_to_datasetpath_to_datasetpath_to_datasetpath_to_dataset')
     # print(path_to_dataset)
     # r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI/data.p
-    #path_to_dataset = "r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI_withoutOne/dataMinusOne.p"
-    
-
-    # load dataset for the specific experiment
     loaded_data = load_dataset(path_to_dataset)
+    all_actions_unique = loaded_data["all_actions_unique"] 
+    #
+    print("len all_actions_unique")
+    print(len(all_actions_unique))
+
+
     
     train_set = loaded_data["train_set"] 
     test_val_set = loaded_data["test_val_set"] 
     all_pairs_of_images_reduced_orig = loaded_data["all_pairs_of_images_reduced_orig"] 
     all_actions_one_hot = loaded_data["all_actions_one_hot"]
-    all_high_lvl_actions_one_hot = loaded_data["all_high_lvl_actions_one_hot"]
+    #all_high_lvl_actions_one_hot = loaded_data["all_high_lvl_actions_one_hot"]
     
     mean_all = loaded_data["mean_all"] 
     std_all = loaded_data["std_all"] 
     all_actions_unique = loaded_data["all_actions_unique"] 
-    all_high_lvl_actions_unique = loaded_data["all_high_lvl_actions_unique"]
+    #all_high_lvl_actions_unique = loaded_data["all_high_lvl_actions_unique"]
     orig_max = loaded_data["orig_max"] 
     orig_min = loaded_data["orig_min"] 
     #
+    print("len all_actions_unique")
+    print(len(all_actions_unique))
 
+
+
+
+    # for i in range(0, len(train_set), 500):
+    #     string = all_actions_unique[np.argmax(train_set[i][1])]
+
+    #     #string_high_lvl = all_high_lvl_actions_unique[np.argmax(train_set[i][2])]
+
+    #     im1, im2 = train_set[i][0]
+
+    #     denormalized = unnormalize_colors(im1, mean_all, std_all) 
+    #     if(sys.argv[2]!="sokoban"):
+    #         dehanced = deenhance(denormalized)
+    #         denormalized = denormalize(dehanced, orig_min, orig_max)
+    #     image1 = np.clip(denormalized, 0, 1)
+
+    #     denormalized = unnormalize_colors(im2, mean_all, std_all) 
+    #     if(sys.argv[2]!="sokoban"):
+    #         dehanced = deenhance(denormalized)
+    #         denormalized = denormalize(dehanced, orig_min, orig_max)
+    #     image2 = np.clip(denormalized, 0, 1)
+
+
+    #     combined_image = np.hstack((image1, image2))
+
+    #     plt.imsave(str(i)+"_.png", combined_image)
+    #     plt.close()
+
+
+
+
+    # exit()
 
 
 
@@ -1060,9 +1096,11 @@ def run(path,transitions,extra=None):
     #                   iv) choisi soit de prendre en compte iii SOIT  de forcer à ne pas supprimer les 10 actions
 
 
-    train_set_no_dupp = loaded_data["train_set_no_dupp_processed"]
-    train_set_no_dupp_orig = loaded_data["train_set_no_dupp_orig"]
+    # train_set_no_dupp = loaded_data["train_set_no_dupp_processed"]
+    # train_set_no_dupp_orig = loaded_data["train_set_no_dupp_orig"]
 
+    train_set_no_dupp = []
+    train_set_no_dupp_orig = []
 
     if args.type == "vanilla":
         train_set_ = []
@@ -1089,6 +1127,58 @@ def run(path,transitions,extra=None):
     #     # for tr in test_val_set:
     #     #     test_val_set_.append(tr[0])
     #     # test_val_set = np.array(test_val_set_)
+
+
+
+
+
+
+    # # GROUP THE TRANSITIONS BY THEIR HIGH LVL ACTION
+    # dico_transitions_per_high_lvl_actions = {}
+
+    # for ii, ele in enumerate(train_set_no_dupp):
+    #     if np.argmax(ele[2]) not in dico_transitions_per_high_lvl_actions:
+    #         # add the key (the high lvl action index)
+    #         dico_transitions_per_high_lvl_actions[np.argmax(ele[2])] = {}
+    #     # if the hash is not in the keys of the dico of the high lvl action
+    #     # i.e. if the transition was not added as a transition for this high lvl action
+    #     if np.argmax(ele[1]) not in dico_transitions_per_high_lvl_actions[np.argmax(ele[2])]:
+    #         # add the transition i.e.:
+    #         # the two preprocessed images
+    #         # the two <=> reduced images (not preprocessed)
+    #         # the onehot repr of the high lvl action
+    #         # the max_diff_in_bits (not used here)
+    #         dico_transitions_per_high_lvl_actions[np.argmax(ele[2])][np.argmax(ele[1])] = {
+    #             "preprocessed" : ele[0],
+    #             "reduced" : train_set_no_dupp_orig[ii][0],
+    #             "onehot": ele[2],
+    #             #"max_diff_in_bits_": ele[2]
+    #         }
+
+
+
+    # weights_each_hl_action = {}
+
+    # for kkkk, vvvv in dico_transitions_per_high_lvl_actions.items():
+    #     weights_each_hl_action[kkkk] = len(vvvv) / len(all_actions_unique)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     if 'compute_pos_preconds_shap_values_per_action' in args.mode or 'compute_neg_preconds_shap_values_per_action' in args.mode:
@@ -1160,6 +1250,12 @@ def run(path,transitions,extra=None):
                     "onehot": ele[2],
                     #"max_diff_in_bits_": ele[2]
                 }
+
+
+
+
+
+
 
         # save_dataset(os.getcwd(), dico_transitions_per_high_lvl_actions, "dico_transitions_per_high_lvl_actions.p")
 
@@ -2299,8 +2395,9 @@ def run(path,transitions,extra=None):
         # with open(os.path.join(exp_aux_json_folder,"aux.json"),"r") as f:
         #     parameters = json.load(f)["parameters"]
 
+        ###   r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI   ????????????????
 
-
+ 
         # 1) load aux json from exp_aux_json_folder
         if os.path.isfile(os.path.join(exp_aux_json_folder,"aux.json")):
             with open(os.path.join(exp_aux_json_folder,"aux.json"),"r") as f:
@@ -2326,8 +2423,12 @@ def run(path,transitions,extra=None):
             data["input_shape"] = aaa
 
 
-        data['parameters']['N'] = 25
-        parameters["N"] = 25
+        ### LE PROB ???? 
+        #### FAUT QUE TU UTILISE LE MEME JSON QUE QUAND TU TRAINE 
+
+
+        data['parameters']['N'] = 16
+        parameters["N"] = 16
         print(args)
         print("HGTFRDEA!!!!!")
         # prob ici c'est que ça load 
@@ -2397,16 +2498,39 @@ def run(path,transitions,extra=None):
 
 
 
+    def train_fn(config=None):
+
+        import wandb
+
+        with wandb.init(config=config, group="Hanoi-4-4-HIGH_Lvl_Jaccard_N16_", resume=True):
+            
+            #path=path_to_json
+            config = wandb.config
+
+            parameters["jaccard_on"] = config.jaccard_on
+            #parameters["denominator"] = config.denominator
+            parameters["newloss_starting_epoch__AND__newloss_ending_epoch"] = config.newloss_starting_epoch__AND__newloss_ending_epoch
+
+            parameters["epoch"] = 1200 #1500
+            #parameters["time_start"] = args.hash
+
+            data['parameters'] = parameters
+            # # Step 3: Write the modified dictionary back to the JSON file
+            # if os.path.isfile(os.path.join(path_to_json,"aux.json")):
+            #     with open(os.path.join(path_to_json,"aux.json"),"w") as f:
+            #         json.dump(data, f, indent=4)
+            # là, ya model compilation ET training
+            task = curry(nn_task, latplan.model.get(parameters["aeclass"]), path, train_set, train_set, val_set, val_set, parameters, False) 
+            task()
+
     if 'learn' in args.mode:
 
+        import wandb
+        
+        wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
 
         dataset_aux_json_folder_base = dataset_fold+"/"+sys.argv[2]
         dataset_aux_json_folder_exp = dataset_fold+"/"+sys.argv[2] + "/" + args.dataset_folder
-
-        print("dataset_aux_json_folder_base is {}".format(str(dataset_aux_json_folder_base)))
-        print("dataset_aux_json_folder_exp is {}".format(str(dataset_aux_json_folder_exp)))
-        print("exp_aux_json_folder is {}".format(str(exp_aux_json_folder)))
-        print("LI1")
 
 
         
@@ -2428,10 +2552,13 @@ def run(path,transitions,extra=None):
         data["parameters"]["time_start"] = ""
 
 
+        print("len(all_actions_unique)")
+        print(len(all_actions_unique))
         if args.type == "vanilla":
             data['parameters']['A'] = 6000
         else:
             data['parameters']['A'] = len(all_actions_unique)
+
 
         if args.type == "vanilla":
             aaa = [2]
@@ -2455,20 +2582,22 @@ def run(path,transitions,extra=None):
         # parameters["beta_z_and_beta_d"] = [10, 1000]
         # parameters["N"] = 300
         parameters["beta_z_and_beta_d"] = [1, 100]
-        parameters["N"] = 25
-        data['parameters']["N"] = 25
+        parameters["N"] = 16 #25
+        data['parameters']["N"] = 16 #25
         # parameters["pdiff_z1z2_z0z3"] = 0
         parameters["type"] = args.type
         data['parameters']["type"] = args.type
 
-        print(train_set[0][1])
-        print(len(train_set[0][1]))
-        print("AAAAAAAAAAAA")
-        print(parameters["A"])
+        parameters["A"] = len(train_set[0][1])
 
-        # 272
-        # AAAAAAAAAAAA
-        # 272
+
+        #parameters["weights_each_hl_action"] = weights_each_hl_action
+
+        parameters["newloss_starting_epoch__AND__newloss_ending_epoch"] = [0, 700]
+
+        parameters["jaccard_on"] = "both"
+
+        parameters["use_temperature"] = False
 
         # 3) sauve la data updatée dans json dans le EXP     folder !!!!
         with open(os.path.join(exp_aux_json_folder,"aux.json"),"w") as f:
@@ -2476,12 +2605,12 @@ def run(path,transitions,extra=None):
 
 
         
-
+        ########################################  NORMAL TRAINING ########################################
 
         import wandb
         wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
         parameters["use_wandb"] = True
-        with wandb.init(project="my-Latplan", group="SinglerunsSOKOBAN", name="R-Latplan-N25-SOKOBAN", resume=False):
+        with wandb.init(project="my-Latplan", group="SinglerunsHANOI", name="R-Latplan-N16-HANOI-final", resume=False):
 
             if args.type == "vanilla":
                 task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
@@ -2491,17 +2620,71 @@ def run(path,transitions,extra=None):
                 task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
                 task()
 
-        # simple_genetic_search(
-        #     curry(nn_task, latplan.model.get(parameters["aeclass"]),
-        #           path,
-        #           train, train, val, val), # noise data is used for tuning metric
-        #     parameters,
-        #     path,
-        #     limit              = 100,
-        #     initial_population = 100,
-        #     population         = 100,
-        #     report             = report,
-        # )
+        
+
+        exit()
+
+        ##################################### HYPER PARAMS SEARCH ########################################
+
+
+        sweep_configuration = {
+            #"method": "bayes",
+            "method": "grid",
+            "metric": {
+                "goal": "minimize", 
+                "name": "elbo"
+            },
+            "parameters": {
+                'jaccard_on' : {"values": ["effects", "preconds", "both"]},
+                #'denominator': {"values": [10, 2]},
+                "newloss_starting_epoch__AND__newloss_ending_epoch" : {"values":
+                [
+                    [500, 700], [900, 1199]
+                ],
+                },
+
+                # 'beta_d' : {"values": [ 100, 1000, 10000 ]},
+                # 'beta_z' : {"values": [ 10, 100 ]},
+                # "conv_channel" : {"values": [16, 32]},
+                # "conv_kernel" : {"values": [5, 10]},
+                # "conv_pooling" : {"values": [1, 2]},
+                # "aae_width" : {"values": [500, 1000]},
+                # "aae_depth" : {"values": [2, 4]},
+                # "fc_depth" : {"values": [2, 3]},
+
+            },
+        }
+
+        parameters["use_wandb"] = True
+        parameters["epoch"] = 2000
+
+
+
+        # for kk, vv in parameters.items():
+        #     if is_jsonable(vv):
+        #         data['parameters'][kk] = vv
+
+        # # Step 3: Write the modified dictionary back to the JSON file
+        # if os.path.isfile(os.path.join(path_to_json,"aux.json")):
+        #     with open(os.path.join(path_to_json,"aux.json"),"w") as f:
+        #         json.dump(data, f, indent=4)
+
+        #
+        sweep_id = wandb.sweep(sweep_configuration, project="my-Latplan")
+        #sweep_id = "aymeric-b/my-Latplan/x3eyoaf5"
+        wandb.agent(sweep_id, function=train_fn, count=6)
+
+        exit()
+
+
+
+
+
+
+
+
+
+
 
     if 'resume' in args.mode:
         simple_genetic_search(

@@ -133,8 +133,8 @@ for key, value in args_dict.items():
 # learn hanoi  4 4 5000 CubeSpaceAE_AMA4Conv kltune2 --hash NoisyPartialDFA2
 
 
-outfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/file.out"
-errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/file.err"
+outfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/fileTEST.out"
+errfile_str = "/workspace/R-latplan/"+_exp_base+"/" + args.domain  + "/" + dataset_fold + "/fileTEST.err"
 
 # print("errfile_str")
 # print(errfile_str)

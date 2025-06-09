@@ -1,1 +1,0 @@
-config mean_ratio total_plans

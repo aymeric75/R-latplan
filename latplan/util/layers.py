@@ -502,6 +502,9 @@ class Variational(Layer):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
     def __call__(self,*args,**kwargs):
+        # print("ARGS ùùùù")
+        # print(args)
+        # exit()
         result = super().__call__(*args,**kwargs)
         result.variational_source = args, kwargs
         result.loss = self.loss

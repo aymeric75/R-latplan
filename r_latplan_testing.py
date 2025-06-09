@@ -65,11 +65,18 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
-parser.add_argument('task', type=str, choices=['generate_pddl', 'gen_plans', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants'], help='type of task to be performed')
+parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
 parser.add_argument('--use_base_to_load', default=None, type=str, help='Optional: Base path to load data from', required=False)
+
+parser.add_argument('--clustering_with_penalty', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates if we use or not the penalty in Jaccard distance', required=False)
+parser.add_argument('--clustering_base_data', default=None, type=str, choices=['only_preconds', 'only_effects', 'both'], help='Optional: indicates which type of data are used for the clustering', required=False)
+
+
+parser.add_argument('--specific_whens', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates whether to use specific whens or not', required=False)
+
 
 args = parser.parse_args()
 
@@ -79,15 +86,23 @@ if 'partial' in args.dataset_folder and args.pb_folder == "":
 
 
 
+
+def bool_to_str(s):
+    print(type(s))
+    print(s)
+    if s:
+        return "True"
+    return "False"
+
 ###
 
 if args.type == "r_latplan":
     exp_folder = "r_latplan_exps/"+args.domain+"/"+args.dataset_folder
+    data_folder  = "r_latplan_datasets/"+args.domain+"/"+args.dataset_folder
+
 else:
     exp_folder = "r_vanilla_latplan_exps/"+args.domain+"/"+args.dataset_folder
-print("exp_folder")
-print(exp_folder)
-
+    data_folder  = "r_vanilla_latplan_datasets/"+args.domain+"/"+args.dataset_folder
 
 
 
@@ -367,9 +382,10 @@ if args.task == "gen_invariants":
 
 
 
+
+
 if args.task == "generate_pddl":
     
-
     # lowest_num = find_lowest_integer(exp_folder)
 
     # copy_and_rename_files(exp_folder, lowest_num, exp_folder)
@@ -421,7 +437,6 @@ if args.task == "generate_pddl":
         "--type": args.type
     }
 
-
     # Convert the dictionary to a list of arguments
     args_list = []
     for key, value in args_dict.items():
@@ -437,16 +452,66 @@ if args.task == "generate_pddl":
                     args_list.append(str(value))
 
 
-
     result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
-
     args_list = [exp_folder]
-
 
     script_path = './pddl-ama3.sh'
 
     result = subprocess.run(['bash', script_path] + args_list, capture_output=False, text=True)
+
+
+elif args.task == "transform_into_clustered_pddl":
+
+    # check that two other args are defined
+
+
+    if args.clustering_with_penalty is None:
+        print("clustering_with_penalty arg required")
+        exit()
+
+
+    if args.clustering_base_data is None:
+        print("clustering_base_data arg required")
+        exit()
+
+    args_dict = {
+        "--base_dir": exp_folder,
+        "--data_folder": data_folder,
+        "--clustering_base_data": args.clustering_base_data,
+        "--clustering_with_penalty": bool_to_str(args.clustering_with_penalty),
+        "--specific_whens": bool_to_str(args.specific_whens)
+    }
+    args_list = []
+    for key, value in args_dict.items():
+        args_list.append(key)
+        args_list.append(str(value))
+  
+
+    script_path = "construct_condpddl_Clustered_LowLvls.py"
+    result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
+elif args.task == "cluster_llas":
+
+
+    # exp_folder
+
+    
+
+    args_dict = {
+        "--base_dir": exp_folder,
+        "--data_folder": data_folder
+    }
+
+    args_list = []
+    for key, value in args_dict.items():
+        args_list.append(key)
+        args_list.append(str(value))
+
+
+    script_path = "./cluster_llas.py"
+
+    result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
 
 
@@ -461,6 +526,8 @@ elif args.task == "gen_plans":
 
     superfolders = [d for d in os.listdir(exp_folder) if "pbs" in d and os.path.isdir(os.path.join(exp_folder, d))]
 
+    superfolders = ["pbs"]
+
     for superfold in superfolders:
 
         # print("SUPERFOLD IS ")
@@ -471,20 +538,25 @@ elif args.task == "gen_plans":
         print("subfoldersSSSSSSSSSSSSSS")
         print(subfolders)
 
-        #domain_file = "/domain.pddl"
-        domain_file = "domainCondBIS.pddl"
+
+        
+        #domain_file = "domain.pddl"
+        #domain_file = "domain_ORIGINAL.pddl"
+        #domain_file = "domainCondBIS.pddl"
+        #domain_file = "THENEWDOMAINBIS.pddl"
+        #domain_file = "domainClustered_VeryHigh.pddl"
+        #domain_file = "domainClustered_llas_True_only_effects_speWhens.pddl"
+        domain_file = "domainClustered_llas_True_only_effects.pddl"
 
         if not "partial" in args.dataset_folder:
-
             
 
             for subfold in subfolders:
                 
 
-           
                 heuri = "blind"
-                if "_" in superfold:
-                    heuri = superfold.split("_")[1]
+                # if "_" in superfold:
+                #     heuri = superfold.split("_")[1]
 
                 # 
                 args_dict = {
@@ -511,18 +583,15 @@ elif args.task == "gen_plans":
                 
                 args_list.append(args.type)
                 args_list.append("0.1")
-                if args.use_base_to_load:
-                    args_list.append("r_latplan_exps/"+args.domain+"/"+args.dataset_folder.split("/")[0])
+                # if args.use_base_to_load:
+                #     args_list.append("r_latplan_exps/"+args.domain+"/"+args.dataset_folder.split("/")[0])
 
                 #result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
                 #args_list.remove("spe_dom_dir")
-                # print("args_list")
-                # print(args_list)
 
                 script_path = './ama3-planner.py'
 
-                print("args_listargs_list")
-                print(args_list)
+       
  
                 result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
@@ -537,8 +606,7 @@ elif args.task == "gen_plans":
             args_dict = {
                 exp_folder+"/"+domain_file: None,
                 exp_folder: None,
-                "lmcut": None,
-                #"blind": None,
+                "blind": None,
                 "1": None,
 
             }

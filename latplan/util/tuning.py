@@ -144,8 +144,9 @@ def nn_task(network, path, train_in, train_out, val_in, val_out, parameters, res
               resume=resume,
               **parameters,)
     import numpy as np
-    error = np.array(net.evaluate(val_in,val_out,batch_size=100,verbose=0))
-    error = np.nan_to_num(error,nan=float("inf"))
+    error = None
+    # error = np.array(net.evaluate(val_in,val_out,batch_size=100,verbose=0))
+    # error = np.nan_to_num(error,nan=float("inf"))
     return net, error
 
 
