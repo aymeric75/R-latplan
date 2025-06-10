@@ -116,11 +116,18 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None, network_
     else:
         sae = latplan.model.load(network_dir,allow_failure=True)
     log("loaded sae")
+
+    
     setup_planner_utils(sae, problem_dir, network_dir, "ama3")
 
 
     p = puzzle_module(sae)
     log("loaded puzzle")
+
+    # print(sigma)# None
+    # print(cycle) # 1 
+    # print(problem_dir) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/1_0
+
 
     log(f"loading init/goal")
     if "sokoban" in network_dir:

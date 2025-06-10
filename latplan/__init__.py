@@ -1,5 +1,20 @@
 # global setting
 
+
+import tqdm
+
+class DummyTqdm:
+    def __init__(self, *args, **kwargs): pass
+    def update(self, *args, **kwargs): pass
+    def close(self): pass
+    def __iter__(self): return iter([])
+    def __enter__(self): return self
+    def __exit__(self, *args): pass
+
+# Patch tqdm globally (cleanly)
+tqdm.tqdm = DummyTqdm
+
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 

@@ -54,6 +54,9 @@ parser.add_argument('--clustering_with_penalty', default=None, type=str, help='O
 parser.add_argument('--specific_whens', default="False", type=str, help='Optional: indicates if we use or not the specific_whens ', required=False)
 
 
+parser.add_argument('--ors_in_whens_are_groups', default="False", type=str, help='Optional: indicates if we use groups of literals (<=> pruned preconds) or just the union', required=False)
+
+
 
 args = parser.parse_args()
 
@@ -387,6 +390,10 @@ all_clusters = {}
 all_clusters_preconds = {}
 
 
+# a dico that describes each clutered action, only with binary vectors
+dico_clusters_binary_desc = {}
+
+
 high_lvl_action_str_gen = ""
 
 for num_action in range(0, nber_hlas):
@@ -460,8 +467,8 @@ for num_action in range(0, nber_hlas):
                 binary_S.at[idx, col] = 1
     binary_S = binary_S.to_numpy()
 
-    print("binary_S.shape")
-    print(binary_S.shape) # (1162, 50)
+    # print("binary_S.shape")
+    # print(binary_S.shape) # (1162, 50)
 
     binary_Effects = np.zeros((len(E), latent_size*2), dtype=np.uint8)
     binary_Effects = pd.DataFrame(binary_Effects)
@@ -555,17 +562,25 @@ for num_action in range(0, nber_hlas):
     gen_gen_gen_precond = "(OR "
 
 
+    # a dico, 
+    # for each cluster, 
+    #   hla : id
+    #   several numpy arrays:
+    #
+    #       gen_precond_and: 1 line
+    #       gen_precond_ors: multiple lines
+    #       gen_effects_and: 1 line
+    #       effects_when_1: 1 NEW DICO, with gen_precond_and, gen_precond_ors, gen_effects_and
+    #       effects_when_2: 1 NEW DICO, with gen_precond_and, gen_precond_ors, gen_effects_and
+    #       ... ETC.
 
     ### FOR EACH CLUSTER, CONSTRUCT THE "CLUSTER" PDDL ACTION 
 
     for id_, clus in clusters.items():
 
-        if num_action == 8 and id_ == 1:
-            for precond in fromBinaryMatrixToStrings(clus["preconds"]):
-                print(precond)
-            print()
-            for effect in fromBinaryMatrixToStrings(clus["effects"]):
-                print(effect)
+
+        cluster_long_id = str(num_action)+"_"+str(id_) 
+        dico_clusters_binary_desc[cluster_long_id] = {}
 
 
         # # print tout en z1 etc
@@ -583,6 +598,15 @@ for num_action in range(0, nber_hlas):
         intersection_in_preconds = np.all(clus["preconds"] == 1, axis=0).astype(np.uint8)
         literals_of_intersection = np.where(intersection_in_preconds)[0]
 
+        # print("intersection_in_preconds")
+        # print(intersection_in_preconds)
+
+        # latent_size
+        
+        
+        dico_clusters_binary_desc[cluster_long_id]["gen_precond_and"] = np.zeros((latent_size*2))
+        if intersection_in_preconds.size != 0:
+            dico_clusters_binary_desc[cluster_long_id]["gen_precond_and"] = intersection_in_preconds
 
 
 
@@ -590,6 +614,15 @@ for num_action in range(0, nber_hlas):
         # enleve l'intersection PUIS,  parcours ligne par ligne et récupère
         preconds_of_clus_minus_inter = clus["preconds"].copy()
         preconds_of_clus_minus_inter[:, literals_of_intersection] = 0
+
+        print("preconds_of_clus_minus_inter")
+        print(preconds_of_clus_minus_inter)
+
+        
+        dico_clusters_binary_desc[cluster_long_id]["gen_precond_ors"] = None
+        if preconds_of_clus_minus_inter.size != 0:
+            dico_clusters_binary_desc[cluster_long_id]["gen_precond_ors"] = preconds_of_clus_minus_inter
+
 
 
         ### BUILD THE "OR" part of the general precondition
@@ -615,14 +648,6 @@ for num_action in range(0, nber_hlas):
         if or_str_of_gen_precond_for_clus == "(OR (AND ))":
             or_str_of_gen_precond_for_clus = ""
 
-
-        if num_action == 8 and id_ == 1:
-            print("transform_atoms_listtransform_atoms_list")
-            #print(or_str_of_gen_precond_for_clus)
-            for inor in transform_atoms_list(in_or):
-                print(inor)
-            #rint(format_literals_1(or_str_of_gen_precond_for_clus))
-            exit()
 
         ### BUILD THE "AND" part (here, just the list of literals) of the general precondition
         literals_of_intersection_str_list = []
@@ -684,6 +709,16 @@ for num_action in range(0, nber_hlas):
         disjunction_in_effects = np.any(clus["effects"] == 1, axis=0).astype(np.uint8) # [ 1 0 0 1 0 ... 0] 1D array showing which literals are in the "disjunction" of the llas effects
         indices_of_inter_literals_in_effects = np.where(intersection_in_effects)[0] # indices of the intersection: [0 3]
 
+
+        #
+
+        
+        dico_clusters_binary_desc[cluster_long_id]["gen_effects_and"] = np.zeros((latent_size*2))
+        if intersection_in_effects.size != 0:
+            dico_clusters_binary_desc[cluster_long_id]["gen_effects_and"] = intersection_in_effects
+
+
+
         mask__ = np.zeros(clus["effects"].shape[1], dtype=int)
         mask__[indices_of_inter_literals_in_effects] = 1
         matching_rows_with_intersect_effects = np.all(clus["effects"] == mask__, axis=1)
@@ -712,6 +747,8 @@ for num_action in range(0, nber_hlas):
             for thefindex, index_lit in enumerate(indices_of_outside_inter_of_literals_in_effects):
                 #print("thefindex {}/{}".format(str(thefindex), str(len(indices_of_outside_inter_of_literals_in_effects))))
 
+                dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)] = {}
+
 
                 tmp_when_clause_for_stats = []
                 indices_clust_elems_for_this_outside_effect = np.where(clus["effects"][:, index_lit] == 1)[0] # indices of llas (in the clus) which effects "cover" the outside effect
@@ -722,6 +759,14 @@ for num_action in range(0, nber_hlas):
                 intersection_in_when_preconds = np.all(preconds_for_this_effect == 1, axis=0).astype(np.uint8) # retrieve the "AND" of the preconds for this "when"
                 indices_of_inter_in_when_preconds = np.where(intersection_in_when_preconds)[0] # retrieve the indices of the preconds that are in common in all the llas of the "when"
 
+                # thefindex
+
+
+                dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_and"] = np.zeros((latent_size*2))
+                if intersection_in_when_preconds.size != 0:
+                    dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_and"] = intersection_in_when_preconds
+
+
                 ### "AND" in preconds of the WHEN
                 literals_of_intersection_in_when_preconds_str_list = [] # hold all literals that are in the intersection of the preconds of the "when"
                 if len(indices_of_inter_in_when_preconds) > 0:
@@ -729,10 +774,56 @@ for num_action in range(0, nber_hlas):
                         if atoms[indic] not in and_base_for_paths_preconditions: # (we dont add the literals already in the "AND" of the general precond)
                             literals_of_intersection_in_when_preconds_str_list.append(atoms[indic])
 
+                print("indices_of_inter_in_when_precondsindices_of_inter_in_when_preconds")
+                print(indices_of_inter_in_when_preconds)
+                print()
+                print("preconds_for_this_effectpreconds_for_this_effectTTT")
+                print(preconds_for_this_effect)
+
+
+                print("indices_of_inter_in_when_precondsindices_of_inter_in_when_preconds")
+                print(indices_of_inter_in_when_preconds)
+
+                preconds_of_when_minus_inter = preconds_for_this_effect.copy()
+                preconds_of_when_minus_inter[:, indices_of_inter_in_when_preconds] = 0
+
+                print()
+                print("AVANT ")
+                print(preconds_for_this_effect)
+                print("APRES ")
+                print(preconds_of_when_minus_inter)
+
+                # args.ors_in_whens_are_groups 
+
                 ### "OR" in preconds of the WHEN
                 disjunction_in_when_preconds = np.any(preconds_for_this_effect == 1, axis=0).astype(np.uint8)
                 indices_of_disjun_in_when_preconds = np.where(disjunction_in_when_preconds)[0]
+       
                 indices_of_outside_inter_of_literals_in_when_preconds = indices_of_disjun_in_when_preconds[~np.isin(indices_of_disjun_in_when_preconds, indices_of_inter_in_when_preconds)]
+                
+                print("indices_of_outside_inter_of_literals_in_when_preconds")
+                print(indices_of_outside_inter_of_literals_in_when_preconds)
+
+                # preconds_of_when_minus_inter
+
+                literals_of_the_ANDS_of_the_OR_in_when_precond = []
+                for a_and_of_or in preconds_of_when_minus_inter:
+                    tmp_preconds_group = []
+                    indices_a_and_of_or = np.where(a_and_of_or)[0]
+                    for indix in indices_a_and_of_or:
+                        tmp_preconds_group.append(atoms[indix])
+                    
+                    if len(tmp_preconds_group) > 0:
+                        literals_of_the_ANDS_of_the_OR_in_when_precond.append(tmp_preconds_group)
+               
+                # if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
+                #     print("literals_of_the_ANDS_of_the_OR_in_when_precondliterals_of_the_ANDS_of_the_OR_in_when_precond")
+                #     print(literals_of_the_ANDS_of_the_OR_in_when_precond)
+                #     exit()
+
+
+                # dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_and"]
+                
                 literals_of_extersection_in_when_preconds_str_list = []
                 if len(indices_of_outside_inter_of_literals_in_when_preconds) > 0:
                     for indic in indices_of_outside_inter_of_literals_in_when_preconds:
@@ -764,13 +855,40 @@ for num_action in range(0, nber_hlas):
                     for ll in literals_of_intersection_in_when_preconds_str_list:
                         and_part_precond += ll + " "  
 
+
                 or_part_precond = ""
-                if len(literals_of_extersection_in_when_preconds_str_list) > 0:
-                    or_part_precond += "(OR "
-                    for ll in literals_of_extersection_in_when_preconds_str_list:
-                        or_part_precond += ll + " "
-                    
-                    or_part_precond += ")"
+
+                if args.ors_in_whens_are_groups == "True":
+                    if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
+                        or_part_precond += "(OR "
+
+                        
+
+                        for an_and in literals_of_the_ANDS_of_the_OR_in_when_precond:
+                            
+                            tmp_and_part = " (AND "
+                            
+                            #or_part_precond += ll + " "
+                            for liiit in an_and:
+                                tmp_and_part += liiit + " "
+                        
+                            tmp_and_part += " ) "
+
+                            or_part_precond += tmp_and_part
+
+
+                        or_part_precond += ")"
+  
+                        # print("or_part_precond")
+                        # print(or_part_precond)
+                        # exit()
+                else:
+                    if len(literals_of_extersection_in_when_preconds_str_list) > 0:
+                        or_part_precond += "(OR "
+                        for ll in literals_of_extersection_in_when_preconds_str_list:
+                            or_part_precond += ll + " "
+                        
+                        or_part_precond += ")"
 
 
                 whole_condition_part = ""
@@ -1090,8 +1208,13 @@ if str(args.specific_whens) == "True":
     str_for_whens += "_speWhens"
 
 
-name_pddl_file = "domainClustered_llas_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+str_for_whens
 
+#" ors_in_whens_are_groups"
+
+name_pddl_file = "domainClustered_llas_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+str_for_whens+"_"+str(args.ors_in_whens_are_groups)
+#
+
+#name_pddl_file = "EXAMPLE"
 
 
 with open(base_dir + "/" + name_pddl_file+".pddl", "w") as f:

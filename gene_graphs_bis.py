@@ -51,7 +51,7 @@ plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.yticks(range(0, 101, 10))
 
 # Custom legend entries
-r_latplan_line = mlines.Line2D([], [], color='black', linestyle='-', label='R-latplan')
+r_latplan_line = mlines.Line2D([], [], color='black', linestyle='-', label="R-Latplan \n& RC-Latplan")
 vanilla_line = mlines.Line2D([], [], color='black', linestyle='--', label='Vanilla')
 blocks_line = mlines.Line2D([], [], color='blue', linestyle='-', label='blocks')
 sokoban_line = mlines.Line2D([], [], color='green', linestyle='-', label='sokoban')

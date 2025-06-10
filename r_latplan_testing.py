@@ -65,7 +65,7 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
-parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants'], help='type of task to be performed')
+parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'gen_dfa_array', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
@@ -76,6 +76,9 @@ parser.add_argument('--clustering_base_data', default=None, type=str, choices=['
 
 
 parser.add_argument('--specific_whens', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates whether to use specific whens or not', required=False)
+
+parser.add_argument('--ors_in_whens_are_groups', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates if we use groups of literals (<=> pruned preconds) or just the union', required=False)
+
 
 
 args = parser.parse_args()
@@ -470,9 +473,12 @@ elif args.task == "transform_into_clustered_pddl":
         print("clustering_with_penalty arg required")
         exit()
 
-
     if args.clustering_base_data is None:
         print("clustering_base_data arg required")
+        exit()
+
+    if args.ors_in_whens_are_groups is None:
+        print("ors_in_whens_are_groups arg required")
         exit()
 
     args_dict = {
@@ -480,7 +486,8 @@ elif args.task == "transform_into_clustered_pddl":
         "--data_folder": data_folder,
         "--clustering_base_data": args.clustering_base_data,
         "--clustering_with_penalty": bool_to_str(args.clustering_with_penalty),
-        "--specific_whens": bool_to_str(args.specific_whens)
+        "--specific_whens": bool_to_str(args.specific_whens),
+        "--ors_in_whens_are_groups": bool_to_str(args.ors_in_whens_are_groups)
     }
     args_list = []
     for key, value in args_dict.items():
@@ -493,16 +500,12 @@ elif args.task == "transform_into_clustered_pddl":
 
 elif args.task == "cluster_llas":
 
-
     # exp_folder
-
-    
 
     args_dict = {
         "--base_dir": exp_folder,
         "--data_folder": data_folder
     }
-
     args_list = []
     for key, value in args_dict.items():
         args_list.append(key)
@@ -510,6 +513,28 @@ elif args.task == "cluster_llas":
 
 
     script_path = "./cluster_llas.py"
+
+    result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
+
+
+# 
+
+elif args.task == "gen_dfa_array":
+
+    # exp_folder
+
+    args_dict = {
+        "--base_dir": exp_folder,
+        "--data_folder": data_folder,
+        "--exp_folder": exp_folder
+    }
+    args_list = []
+    for key, value in args_dict.items():
+        args_list.append(key)
+        args_list.append(str(value))
+
+
+    script_path = "./gen_dfa_array.py"
 
     result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 

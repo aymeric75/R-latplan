@@ -103,10 +103,10 @@ y_r_latplan = turn_int(y_r_latplan)
 # Creating the plot
 plt.figure(figsize=(10, 3))
 plt.plot(x_vanilla, y_vanilla, label='Vanilla', marker='o', color="red")
-plt.plot(x_r_latplan, y_r_latplan, label='R Latplan', marker='s', color="blue")
+plt.plot(x_r_latplan, y_r_latplan, label='R-Latplan & R2-Latplan', marker='s', color="blue")
 
 # Adding titles and labels
-plt.title('Planning performances on Hanoi: Vanilla vs R-Latplan')
+plt.title('Planning performances on Hanoi: Vanilla vs R-Latplan vs R2-Latplan')
 plt.xlabel('Problem size (in steps)')
 plt.ylabel('Number of problems solved')
 plt.legend()
