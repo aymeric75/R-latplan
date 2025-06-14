@@ -1,0 +1,197 @@
+{
+  "network": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI",
+  "problem": "5_1",
+  "domain": "pbs",
+  "noise": null,
+  "times": [
+    {
+      "message": "init",
+      "wall": 0,
+      "elapsed": 0
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 0.8402767181396484,
+      "elapsed": 0.8402767181396484
+    },
+    {
+      "message": "loaded sae",
+      "wall": 4.956227779388428,
+      "elapsed": 4.115951061248779
+    },
+    {
+      "message": "loaded puzzle",
+      "wall": 4.9563703536987305,
+      "elapsed": 0.00014257431030273438
+    },
+    {
+      "message": "loading init/goal",
+      "wall": 4.956382513046265,
+      "elapsed": 1.2159347534179688e-05
+    },
+    {
+      "message": "loaded init/goal",
+      "wall": 5.851682901382446,
+      "elapsed": 0.8953003883361816
+    },
+    {
+      "message": "start planning",
+      "wall": 5.851810693740845,
+      "elapsed": 0.0001277923583984375
+    },
+    {
+      "message": "start generating problem",
+      "wall": 5.851937770843506,
+      "elapsed": 0.0001270771026611328
+    },
+    {
+      "message": "finished generating problem",
+      "wall": 5.978036642074585,
+      "elapsed": 0.1260988712310791
+    },
+    {
+      "message": "start planning",
+      "wall": 6.23682427406311,
+      "elapsed": 0.2587876319885254
+    },
+    {
+      "message": "finished planning",
+      "wall": 7.1954591274261475,
+      "elapsed": 0.9586348533630371
+    },
+    {
+      "message": "start running a validator",
+      "wall": 7.195521831512451,
+      "elapsed": 6.270408630371094e-05
+    },
+    {
+      "message": "finished running a validator",
+      "wall": 7.4901018142700195,
+      "elapsed": 0.29457998275756836
+    },
+    {
+      "message": "start parsing the plan",
+      "wall": 7.490163564682007,
+      "elapsed": 6.175041198730469e-05
+    },
+    {
+      "message": "finished parsing the plan",
+      "wall": 7.594111919403076,
+      "elapsed": 0.10394835472106934
+    },
+    {
+      "message": "start plotting the plan",
+      "wall": 7.594151735305786,
+      "elapsed": 3.981590270996094e-05
+    },
+    {
+      "message": "finished plotting the plan",
+      "wall": 7.784687757492065,
+      "elapsed": 0.1905360221862793
+    },
+    {
+      "message": "start archiving the plan",
+      "wall": 7.784725189208984,
+      "elapsed": 3.743171691894531e-05
+    },
+    {
+      "message": "finished archiving the plan",
+      "wall": 7.802804946899414,
+      "elapsed": 0.018079757690429688
+    },
+    {
+      "message": "start visually validating the plan image : transitions",
+      "wall": 7.802897214889526,
+      "elapsed": 9.226799011230469e-05
+    }
+  ],
+  "heuristics": "blind",
+  "domainfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/domainClustered_llas_True_only_effects_True.pddl",
+  "problemfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.pddl",
+  "planfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.plan",
+  "tracefile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.trace",
+  "csvfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.csv",
+  "pngfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.png",
+  "jsonfile": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/pbs/5_1/ama3_r_latplan_exps_hanoi_hanoi_complete_clean_faultless_withoutTI_domainClustered_llas_True_only_effects_True_blind_problem.json",
+  "statistics": "",
+  "parameters": {
+    "test_noise": false,
+    "test_hard": true,
+    "train_noise": true,
+    "train_hard": false,
+    "dropout_z": false,
+    "noise": 0.2,
+    "dropout": 0.2,
+    "optimizer": "radam",
+    "min_temperature": 0.5,
+    "epoch": 1,
+    "gs_annealing_start": 0,
+    "gs_annealing_end": 1000,
+    "kl_cycle_start": 2000,
+    "clipnorm": 0.1,
+    "batch_size": 400,
+    "lr": 0.001,
+    "N": 16,
+    "zerosuppress": 0.1,
+    "densify": false,
+    "max_temperature": 5.0,
+    "conv_channel": 32,
+    "conv_channel_increment": 1,
+    "conv_kernel": 5,
+    "conv_pooling": 1,
+    "conv_per_pooling": 1,
+    "conv_depth": 3,
+    "fc_width": 100,
+    "fc_depth": 2,
+    "A": 1469,
+    "aae_activation": "relu",
+    "aae_width": 1000,
+    "aae_depth": 2,
+    "eff_regularizer": null,
+    "beta_d": 1000,
+    "beta_z": 1,
+    "output": "GaussianOutput(sigma=0.1)",
+    "mode": "learn",
+    "disks": 4,
+    "towers": 4,
+    "num_examples": 5000,
+    "aeclass": "CubeSpaceAE_AMA4Conv",
+    "comment": "kltune2",
+    "hash": "hanoi",
+    "generator": "latplan.puzzles.hanoi",
+    "picsize": [
+      25,
+      70
+    ],
+    "beta_a_recons": 1,
+    "load_sae_weights": false,
+    "use_wandb": true,
+    "gpu": "NVIDIA A100-SXM4-80GB MIG 3g.40gb",
+    "time_start": "",
+    "do_sweep": true,
+    "orig_max": 1.0,
+    "orig_min": 0.04842214663643235,
+    "beta_z_and_beta_d": [
+      1,
+      1000
+    ],
+    "pdiff_z1z2_z0z3": [
+      1,
+      1000
+    ],
+    "the_exp_path": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI",
+    "type": "r_latplan",
+    "newloss_starting_epoch__AND__newloss_ending_epoch": [
+      0,
+      700
+    ],
+    "jaccard_on": "both",
+    "use_temperature": false,
+    "weights_each_hl_action": [],
+    "beta_ama_recons": 1
+  },
+  "valid": false,
+  "found": true,
+  "exhausted": false,
+  "cycle": 1
+}

@@ -496,11 +496,11 @@ for num_action in range(0, nber_hlas):
 
 
 
-            # with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(penal)+"_"+str(kkk)+".txt", 'w') as fff:
-            #     for value in clusters_.values():
-            #         fff.write(' '.join(map(str, value)) + '\n')
+            with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(penal)+"_"+str(kkk)+".txt", 'w') as fff:
+                for value in clusters_.values():
+                    fff.write(' '.join(map(str, value)) + '\n')
 
-            # 
+            
             mean_contr_preconds = round(total_contradictory_preconds / len(clusters_), 2)
             mean_contr_effects = round(total_contradictory_effects / len(clusters_), 2)
             mean_nb_lit_preconds = math.ceil(total_nb_lit_preconds / len(clusters_))
@@ -516,8 +516,8 @@ for num_action in range(0, nber_hlas):
         rows.append(row)
         #print(rows)
 
-    from tabulate import tabulate
+    # from tabulate import tabulate
 
-    # Print the table
-    print(tabulate(rows, headers=columns, tablefmt="grid"))
-    exit()
+    # # Print the table
+    # print(tabulate(rows, headers=columns, tablefmt="grid"))
+    # exit()

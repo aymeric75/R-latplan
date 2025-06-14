@@ -21,6 +21,7 @@ learn/events*
 *.tar
 /samples/table
 samples*/
+wandb/
 problem-instances/*/
 blocks*/
 countries*/

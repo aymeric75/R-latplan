@@ -965,19 +965,15 @@ def run(path,transitions,extra=None):
     path_to_dataset = dataset_aux_json_folder_exp +"/data.p"
 
 
-    #path_to_dataset = dataset_aux_json_folder_exp +"/dataMinusOne.p"
+    path_to_dataset = dataset_aux_json_folder_exp +"/dataPartialLast.p"
 
-    
 
-    # print('path_to_datasetpath_to_datasetpath_to_datasetpath_to_dataset')
-    # print(path_to_dataset)
     # r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI/data.p
     loaded_data = load_dataset(path_to_dataset)
+
+    
     all_actions_unique = loaded_data["all_actions_unique"] 
     #
-    print("len all_actions_unique")
-    print(len(all_actions_unique))
-
 
     
     train_set = loaded_data["train_set"] 
@@ -993,8 +989,7 @@ def run(path,transitions,extra=None):
     orig_max = loaded_data["orig_max"] 
     orig_min = loaded_data["orig_min"] 
     #
-    print("len all_actions_unique")
-    print(len(all_actions_unique))
+
 
 
 
@@ -1035,11 +1030,6 @@ def run(path,transitions,extra=None):
     # print(train_set[0][2])
     # exit()
    
-    print("LEN all_actions_unique")
-    print(len(all_actions_unique)) # 1469 ...
-
-    print("len train_set")
-    print(len(train_set))
 
 
     # train_set ,  [all_pairs_of_images_processed_gaussian40[i], all_actions_one_hot[i], all_high_lvl_actions_one_hot[i]]
@@ -2380,7 +2370,6 @@ def run(path,transitions,extra=None):
 
 
 
-
     if 'gen_invs' in args.mode:
 
         print("icii9999")
@@ -2448,8 +2437,8 @@ def run(path,transitions,extra=None):
         parameters["beta_z_and_beta_d"] = [1, 1000]
         parameters["pdiff_z1z2_z0z3"] = [1, 1000]
         print("theparameters")
-
-        #exit()
+        print(parameters["A"])
+        print(data['parameters']["A"])
         print("exp_aux_json_folderexp_aux_json_folder")
         print(exp_aux_json_folder)
 
@@ -2463,12 +2452,6 @@ def run(path,transitions,extra=None):
         else:
             net = latplan.model.load(exp_aux_json_folder, allow_failure=False)
 
-        # 
-        print(type(transitions)) # 
-        #print(transitions.shape) # (5000, 2, 48, 48, 1)
-        print("AAAAASQQQQQQ")
-        print(len(transitions))
-
 
         # print(np.array(transitions).shape)
 
@@ -2477,25 +2460,21 @@ def run(path,transitions,extra=None):
             dump_actions(net, train_set, name = "actions.csv", repeat=1)
         
         else:
-
             thetransarray=[]
             theactionarray=[]
             for trr in train_set:
                 thetransarray.append(trr[0])
                 theactionarray.append(trr[1])
             
-
             #dump_actions(net, [transitions, actions_transitions], name = "actions.csv", repeat=1)
             dump_actions(net, [thetransarray, theactionarray], name = "actions.csv", repeat=1)
             # alors...
 
 
 
-
     if 'aggregate_effects_preconds' in args.mode:
         print("ENFIN")
         exit()
-
 
 
     def train_fn(config=None):
@@ -2607,20 +2586,20 @@ def run(path,transitions,extra=None):
         
         ########################################  NORMAL TRAINING ########################################
 
-        import wandb
-        wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
-        parameters["use_wandb"] = True
-        with wandb.init(project="my-Latplan", group="SinglerunsHANOI", name="R-Latplan-N16-HANOI-final", resume=False):
+        # import wandb
+        # wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
+        parameters["use_wandb"] = False
+        #with wandb.init(project="my-Latplan", group="SinglerunsHANOI", name="R-Latplan-N16-HANOI-final", resume=False):
 
-            if args.type == "vanilla":
-                task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
-                task()
-            else:
+        if args.type == "vanilla":
+            task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+            task()
+        else:
 
-                task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
-                task()
+            task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+            task()
 
-        
+    
 
         exit()
 

@@ -393,6 +393,7 @@ all_clusters_preconds = {}
 # a dico that describes each clutered action, only with binary vectors
 dico_clusters_binary_desc = {}
 
+dico_normal_binary_desc = {}
 
 high_lvl_action_str_gen = ""
 
@@ -418,11 +419,24 @@ for num_action in range(0, nber_hlas):
 
 
     for thecounter, (lowlvlkey, dico_vals) in enumerate(dico_highlvlid_lowlvlactions[num_action].items()):
+
         S.append(dico_vals["preconds"])
         E.append(dico_vals["effects"])
+
         for atom in dico_vals["preconds"]:
             U_pre.append(atom)
 
+
+
+
+    binary_S_full = np.zeros((len(S), latent_size*2), dtype=np.uint8)
+    binary_S_full = pd.DataFrame(binary_S_full)
+    binary_S_full.columns = atoms
+    for idx, row in binary_S_full.iterrows():
+        for col in S[idx]:
+            if col in binary_S_full.columns:
+                binary_S_full.at[idx, col] = 1
+    binary_S_full = binary_S_full.to_numpy()
 
     U_pre = list(set(U_pre))
 
@@ -438,10 +452,6 @@ for num_action in range(0, nber_hlas):
             for el in I:
                 and_str += el + " "
             and_str += " )"
-
-
-
-
 
     ##### UNIT TEST 3: check the precondition_and part
     # first uncomment the fake S introduced in UNIT TEST 2 and the print(S) below
@@ -478,6 +488,17 @@ for num_action in range(0, nber_hlas):
             if col in binary_Effects.columns:
                 binary_Effects.at[idx, col] = 1
     binary_Effects = binary_Effects.to_numpy()
+
+
+    #dico_normal_binary_desc[str(num_action)+"_"+str(lowlvlkey)] = 
+
+    # binary_S_full
+    # binary_Effects
+
+    for countt in range(len(binary_S_full)):
+        dico_normal_binary_desc[str(num_action)+"_"+str(countt)] = []
+        dico_normal_binary_desc[str(num_action)+"_"+str(countt)].append(binary_S_full[countt])
+        dico_normal_binary_desc[str(num_action)+"_"+str(countt)].append(binary_Effects[countt])
 
  
     mask_comparing_two_halves = matrix_cross_compare(binary_S) # returns the "mask" of where (columns) the rows of binary_S contradict
@@ -774,24 +795,9 @@ for num_action in range(0, nber_hlas):
                         if atoms[indic] not in and_base_for_paths_preconditions: # (we dont add the literals already in the "AND" of the general precond)
                             literals_of_intersection_in_when_preconds_str_list.append(atoms[indic])
 
-                print("indices_of_inter_in_when_precondsindices_of_inter_in_when_preconds")
-                print(indices_of_inter_in_when_preconds)
-                print()
-                print("preconds_for_this_effectpreconds_for_this_effectTTT")
-                print(preconds_for_this_effect)
-
-
-                print("indices_of_inter_in_when_precondsindices_of_inter_in_when_preconds")
-                print(indices_of_inter_in_when_preconds)
-
                 preconds_of_when_minus_inter = preconds_for_this_effect.copy()
                 preconds_of_when_minus_inter[:, indices_of_inter_in_when_preconds] = 0
 
-                print()
-                print("AVANT ")
-                print(preconds_for_this_effect)
-                print("APRES ")
-                print(preconds_of_when_minus_inter)
 
                 # args.ors_in_whens_are_groups 
 
@@ -801,8 +807,7 @@ for num_action in range(0, nber_hlas):
        
                 indices_of_outside_inter_of_literals_in_when_preconds = indices_of_disjun_in_when_preconds[~np.isin(indices_of_disjun_in_when_preconds, indices_of_inter_in_when_preconds)]
                 
-                print("indices_of_outside_inter_of_literals_in_when_preconds")
-                print(indices_of_outside_inter_of_literals_in_when_preconds)
+
 
                 # preconds_of_when_minus_inter
 
@@ -858,11 +863,38 @@ for num_action in range(0, nber_hlas):
 
                 or_part_precond = ""
 
+
+                if args.ors_in_whens_are_groups == "True":
+
+                    dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = None
+
+                    if len(preconds_of_when_minus_inter) > 0:
+                        dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = preconds_of_when_minus_inter
+
+                else:
+                    
+                    dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = None
+
+                    if len(indices_of_outside_inter_of_literals_in_when_preconds) > 0:
+                        rows_ = []
+                        for indic in indices_of_outside_inter_of_literals_in_when_preconds:
+                            row_ = np.zeros((latent_size*2))
+                            row_[indic] = 1
+                            rows_.append(row)
+                        if len(rows_) > 0:
+                            dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = np.array(rows_)
+
+                    dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = None
+                    if preconds_of_clus_minus_inter.size != 0:
+                        dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"] = preconds_of_clus_minus_inter
+
+
+                dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["effect"] = index_lit
+
                 if args.ors_in_whens_are_groups == "True":
                     if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
                         or_part_precond += "(OR "
 
-                        
 
                         for an_and in literals_of_the_ANDS_of_the_OR_in_when_precond:
                             
@@ -1024,32 +1056,23 @@ for num_action in range(0, nber_hlas):
             effect_for_general_when_for_cluster += two_tabs_space + ") \n"
 
         else:
-
-
             
             for inter_lit in inter_literals_in_effects:
                 cluster_str += two_tabs_space + inter_lit + "\n"
                 effect_for_general_when_for_cluster += two_tabs_space + inter_lit + "\n"
 
-
         # nbre_llas = len(dico_highlvlid_lowlvlactions[num_action])
-
         # if len(when_clauses) > 0:
-
         #     print("nbre llas for action {}, WITH when_clauses is {}".format(str(num_action), str(nbre_llas)))
-
         #     if num_action == 17:
         #         print(when_clauses)
         #         exit()
-
         # continue
 
         for tmp_clause in when_clauses:
             cluster_str += tmp_clause
             effect_for_general_when_for_cluster += tmp_clause
 
-
-        
 
 
         if ( len(when_clauses) + len(inter_literals_in_effects) ) > 1:
@@ -1066,13 +1089,6 @@ for num_action in range(0, nber_hlas):
         # print("cluster_strcluster_str")
         # print(cluster_str)
 
-        """        print("ALLER LA ")
-                print(cluster_str)
-                print("general_when_for_clustergeneral_when_for_clustergeneral_when_for_cluster")
-                print(general_when_for_cluster)
-                if id_ == 5:
-                    break
-                continue """
 
         # print("general_when_for_clustergeneral_when_for_clustergeneral_when_for_clustergeneral_when_for_cluster")
         # print(general_when_for_cluster)
@@ -1181,31 +1197,29 @@ for num_action in range(0, nber_hlas):
 
 
 
-#     else:
-#         counter_NOT_passed_test1 += 1
-#         print("LLA {} of hla {} DID NOT passed the TEST1 !!!!".format(str(lowlvlkey), str(num_action)))
-#         # print("counter_of_OKs_of_good_high_lvl_action {}".format(str(counter_of_OKs_of_good_high_lvl_action)))
-#         # print("counter_of_OKs_NOT_good_high_lvl_action (other hla in which the llp are 'valid') {}".format(str(counter_of_OKs_NOT_good_high_lvl_action)))
-#         # print(format_literals_1(dico_highlvlid_lowlvlactions[num_action][lowlvlkey]["preconds"]))
-#         # z1  z9  z10  z12  z15  ~z0  ~z2  ~z4  ~z7  ~z8  ~z11  ~z13
-        
+str_for_whens = ""
+if str(args.specific_whens) == "True":
+    str_for_whens += "_speWhens"
 
 
-# print("#LLAs passed test1: {}".format(str(counter_passed_test1)))
-# print("#LLAs NOT passed test1: {}".format(str(counter_NOT_passed_test1)))
+
+filename = "dico_clusters_binary_desc_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+"_"+str(args.ors_in_whens_are_groups)+".p"
+with open(base_dir + "/" + filename, mode="wb") as f:
+    pickle.dump(dico_clusters_binary_desc, f)
+
+
+filename = "dico_normal_binary_desc"+".p"
+with open(base_dir + "/" + filename, mode="wb") as f:
+    pickle.dump(dico_normal_binary_desc, f)
+
 
 
 
 exit()
 
-
 ###################
 ###################   IV. WRITE THE PDDL 
 ###################
-
-str_for_whens = ""
-if str(args.specific_whens) == "True":
-    str_for_whens += "_speWhens"
 
 
 

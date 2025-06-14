@@ -26,8 +26,6 @@ import argparse
 
 
 
-
-
 import subprocess
 import os
 import sys
@@ -48,7 +46,7 @@ import json
 
 
 
-parser = argparse.ArgumentParser(description="A script cluster low level actions of R-latplan")
+parser = argparse.ArgumentParser(description="A script that save a .p where each ele is two images and a transi ID (?)")
 
 parser.add_argument('--base_dir', default=None, type=str, help='Optional: Base path of the current experiment', required=False)
 parser.add_argument('--data_folder', default=None, type=str, help='Optional: Base path of the current experiment data', required=False)
@@ -118,6 +116,7 @@ print(path_to_dataset)
 sae = latplan.model.load(exp_folder,allow_failure=True)
 
 
+
 rows = []
 
 total = len(train_set_no_dupp)
@@ -146,9 +145,9 @@ for ii, ele in enumerate(train_set_no_dupp):
     # print(state1)
     # print(np.argmax(ele[2]))
 
-    #result = np.concatenate((state0, state1, np.array([np.argmax(ele[2])])))
+    result = np.concatenate((state0, state1, np.array([np.argmax(ele[2])])))
 
-    result = np.concatenate((state0, state1, np.array([8])))
+    #result = np.concatenate((state0, state1, np.array([8])))
 
     if not any(np.array_equal(result, existing) for existing in rows):
         rows.append(result)
@@ -169,5 +168,3 @@ with open(exp_folder+"/"+filename, mode="wb") as f:
 
 #     if np.argmax(ele[1]) not in dico_lowlvl_highlvl:
 #         dico_lowlvl_highlvl[np.argmax(ele[1])] = np.argmax(ele[2])
-
-1

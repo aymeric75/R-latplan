@@ -645,7 +645,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             #if forwandb:
             to_send_towandb = logs_net
             to_send_towandb["epoch"] = epoch
-            wandb.log(to_send_towandb)
+            #wandb.log(to_send_towandb)
 
             losses.append(logs_net["loss"])
             logs.update(logs_net)

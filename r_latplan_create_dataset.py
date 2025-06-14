@@ -5,6 +5,9 @@ import argparse
 import sys
 import subprocess
 import shutil
+import numpy as np
+import random
+import copy
 
 def switch_conda_environment(env_name):
     subprocess.run(f"conda activate {env_name}", shell=True)
@@ -13,8 +16,11 @@ def switch_conda_environment(env_name):
 
 parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if vanilla or r-latplan')
-parser.add_argument('task', type=str, choices=['create_clean_traces', 'create_exp_data_sym', 'create_exp_data_im'], help='type of task to be performed')
+parser.add_argument('task', type=str, choices=['cut', 'create_clean_traces', 'create_exp_data_sym', 'create_exp_data_im'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
+
+
+
 parser.add_argument('complete', type=str, choices=['complete', 'partial'], help='completness of the dataset, i.e. if missing transitions or not')
 parser.add_argument('clean', type=str, choices=['clean', 'noisy'], help='if the dataset should be clean or noisy')
 parser.add_argument('erroneous', type=str, choices=['erroneous', 'faultless'], help='if the dataset should contain some mislabeled transitions')
@@ -23,6 +29,7 @@ parser.add_argument('extra_label', type=str, help='add an extra label to the rep
 
 
 args = parser.parse_args()
+
 
 
 use_transi_iden = False
@@ -122,9 +129,194 @@ elif args.type == "vanilla":
     trace_dir = os.getcwd()+'/'+"r_vanilla_latplan_datasets/"+args.domain
 
 
+import pickle
+def load_dataset(path_to_file):
+    # Load data.
+    with open(path_to_file, mode="rb") as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
+
+
+if args.task == "cut":
+
+    print("dataset_exp_dir") # /workspace/R-latplan/r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI
+    print(dataset_exp_dir)
+
+    
+    print("exp_exp_dir") # /workspace/R-latplan/r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI
+    print(exp_exp_dir)
+
+    print("trace_dir") # /workspace/R-latplan/r_latplan_datasets/hanoi
+    print(trace_dir)
+
+    # 0) locate the data.p (if not seen, return)
+    if not os.path.exists(dataset_exp_dir + "/" + "data.p"):
+        print("File DOES NOT exists")
+        exit()
+    
+
+    # 1) load it and remove X% of the transitions
+    loaded_data = load_dataset(dataset_exp_dir + "/" + "data.p")
+
+    # train_set, test_val_set, all_pairs_of_images_reduced_orig, all_actions_one_hot, all_high_lvl_actions_one_hot, mean_all, std_all, 
+    # all_actions_unique, all_high_lvl_actions_unique, orig_max, orig_min, train_set_no_dupp_processed, train_set_no_dupp_orig, all_traces_pair_and_action
+
+    
+
+    ## 1) i) 
+    train_set = loaded_data["train_set"] 
+    test_val_set = loaded_data["test_val_set"] 
+    all_pairs_of_images_reduced_orig = loaded_data["all_pairs_of_images_reduced_orig"] 
+    all_actions_one_hot = loaded_data["all_actions_one_hot"]
+    all_high_lvl_actions_one_hot = loaded_data["all_high_lvl_actions_one_hot"] 
+    mean_all = loaded_data["mean_all"] 
+    std_all = loaded_data["std_all"]
+    all_actions_unique = loaded_data["all_actions_unique"] 
+    all_high_lvl_actions_unique = loaded_data["all_high_lvl_actions_unique"]
+    orig_max = loaded_data["orig_max"]
+    orig_min = loaded_data["orig_min"]
+    train_set_no_dupp_processed = loaded_data["train_set_no_dupp_processed"]
+    train_set_no_dupp_orig = loaded_data["train_set_no_dupp_orig"]
+    all_traces_pair_and_action = loaded_data["all_traces_pair_and_action"]
+    
+    
+
+
+    #### Compute the number of llps per lla
+    ##### ENSUITE retire X% de chaque lla
+
+    # GROUP THE TRANSITIONS BY THEIR HIGH LVL ACTION
+    dico_transitions_per_high_lvl_actions = {}
+    for ii, ele in enumerate(train_set_no_dupp_processed):
+        if np.argmax(ele[2]) not in dico_transitions_per_high_lvl_actions:
+            dico_transitions_per_high_lvl_actions[np.argmax(ele[2])] = []
+        if np.argmax(ele[1]) not in dico_transitions_per_high_lvl_actions[np.argmax(ele[2])]:
+            dico_transitions_per_high_lvl_actions[np.argmax(ele[2])].append(np.argmax(ele[1]))
 
 
 
+    # 
+    transis_to_remove = []
+
+    for h_in, high in dico_transitions_per_high_lvl_actions.items():
+
+        size_percented = len(high) // 5
+
+        to_remove = random.sample(high, size_percented)
+
+        for el in to_remove:
+            transis_to_remove.append(el)
+
+    print("transis_to_remove")
+    print(len(np.array(transis_to_remove)))
+
+    print(len(np.unique(np.array(transis_to_remove))))
+
+
+    # 2) enlever from # remove from train_set, test_val_set, all_actions_unique, train_set_no_dupp_processed, train_set_no_dupp_orig
+
+    #
+    # print(type(train_set)) # <class 'list'>
+    # print(type(test_val_set)) # <class 'list'>
+    # print(type(all_actions_unique)) # <class 'list'>
+    # print(type(train_set_no_dupp_processed)) # <class 'list'>
+    # print(type(train_set_no_dupp_orig)) # <class 'list'>
+
+
+    # 
+    train_set_ = copy.deepcopy(train_set)
+    test_val_set_ = copy.deepcopy(test_val_set)
+    all_actions_unique_ = copy.deepcopy(all_actions_unique)
+    train_set_no_dupp_processed_ = copy.deepcopy(train_set_no_dupp_processed)
+    train_set_no_dupp_orig_ = copy.deepcopy(train_set_no_dupp_orig)
+
+    all_actions_one_hot_ = copy.deepcopy(all_actions_one_hot)
+
+
+    for i, ele in enumerate(train_set):
+        if np.argmax(ele[-2]) in transis_to_remove:
+            train_set_[i] = None
+        else:
+            train_set_[i][-2] = np.delete(train_set_[i][-2], transis_to_remove)
+
+    train_set_ = [x for x in train_set_ if x is not None]
+
+    for i, ele in enumerate(test_val_set):
+        if np.argmax(ele[-2]) in transis_to_remove:
+            test_val_set_[i] = None
+        else:
+            test_val_set_[i][-2] = np.delete(test_val_set_[i][-2], transis_to_remove)
+    test_val_set_ = [x for x in test_val_set_ if x is not None]
+
+
+    for i, ele in enumerate(all_actions_unique):
+        if i in transis_to_remove:
+            all_actions_unique_[i] = None
+    all_actions_unique_ = [x for x in all_actions_unique_ if x is not None]
+
+
+    for i, ele in enumerate(train_set_no_dupp_processed):
+        if np.argmax(ele[-2]) in transis_to_remove:
+            train_set_no_dupp_processed_[i] = None
+        else:
+            train_set_no_dupp_processed_[i][-2] = np.delete(train_set_no_dupp_processed_[i][-2], transis_to_remove)
+    train_set_no_dupp_processed_ = [x for x in train_set_no_dupp_processed_ if x is not None]
+
+
+    for i, ele in enumerate(train_set_no_dupp_orig):
+        if np.argmax(ele[-2]) in transis_to_remove:
+            train_set_no_dupp_orig_[i] = None
+        else:
+            train_set_no_dupp_orig_[i][-2] = np.delete(train_set_no_dupp_orig_[i][-2], transis_to_remove)
+    train_set_no_dupp_orig_ = [x for x in train_set_no_dupp_orig_ if x is not None]
+
+    for i, ele in enumerate(all_actions_one_hot):
+        if np.argmax(ele) in transis_to_remove:
+            all_actions_one_hot_[i] = None
+    all_actions_one_hot_ = [x for x in all_actions_one_hot_ if x is not None]
+
+    data = {
+        "train_set": train_set_,
+        "test_val_set": test_val_set_,
+        "all_pairs_of_images_reduced_orig": all_pairs_of_images_reduced_orig,
+        "all_actions_one_hot": all_actions_one_hot_,
+        "all_high_lvl_actions_one_hot": all_high_lvl_actions_one_hot,
+        "mean_all": mean_all,
+        "std_all": std_all,
+        "all_actions_unique": all_actions_unique_, 
+        "all_high_lvl_actions_unique": all_high_lvl_actions_unique, 
+        "orig_max": orig_max, 
+        "orig_min": orig_min, 
+        "train_set_no_dupp_processed": train_set_no_dupp_processed_, 
+        "train_set_no_dupp_orig": train_set_no_dupp_orig_, 
+        "all_traces_pair_and_action": all_traces_pair_and_action
+    }
+
+
+    filename = "dataPartialLast.p"
+    with open(exp_exp_dir+"/"+filename, mode="wb") as f:
+        pickle.dump(data, f)
+    with open(dataset_exp_dir+"/"+filename, mode="wb") as f:
+        pickle.dump(data, f)
+
+    # dataset_exp_dir  exp_exp_dir
+
+    exit()
+
+    # dataPartialLast.p
+
+    # OK, donc:
+
+    # 1) training
+
+    # 2) 
+
+
+
+    
+    #
+    # save it back on the right folder (should be in r_latplan_datasets)
+    #
 
 ##########   CREATE THE TRACES OF CLEAN IMAGES  ###########
 

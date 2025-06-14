@@ -6,6 +6,7 @@ import sys
 import subprocess
 import re 
 import shutil
+import numpy as np 
 
 def switch_conda_environment(env_name):
     subprocess.run(f"conda activate {env_name}", shell=True)
@@ -31,7 +32,13 @@ def find_lowest_integer(directory):
     
     return lowest_integer
 
+import pickle
 
+def load_dataset(path_to_file):
+    # Load data.
+    with open(path_to_file, mode="rb") as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
 
 def copy_and_rename_files(directory, specific_number, destination_directory):
     # Define the pattern to match the files containing the specific number
@@ -65,7 +72,7 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
-parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'gen_dfa_array', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants'], help='type of task to be performed')
+parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'gen_dfa_array', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants', 'test_coverage_on_full_dfa'], help='type of task to be performed')
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
@@ -540,6 +547,257 @@ elif args.task == "gen_dfa_array":
 
 
 
+elif args.task == "test_coverage_on_full_dfa":
+
+
+    args_dict = {
+        "--base_dir": exp_folder,
+        "--data_folder": data_folder,
+        "--exp_folder": exp_folder
+    }
+    args_list = []
+    for key, value in args_dict.items():
+        args_list.append(key)
+        args_list.append(str(value))
+
+    # load the full dfa
+    loaded_dataset = load_dataset(exp_folder + "/all_transis_and_action.p")
+
+
+
+    # it's a list, each ele is a np array of length state0 x state0 x 1 (high lvl id)
+
+    loaded_clustered_actions = load_dataset(exp_folder + "/dico_clusters_binary_desc_"+str(args.clustering_with_penalty)+"_"+str(args.clustering_base_data)+"_"+str(args.ors_in_whens_are_groups)+".p")
+    loaded_normal_actions = load_dataset(exp_folder + "/dico_normal_binary_desc.p")
+
+
+
+    coverage_r_latplan = 0
+    applicable_r_latplan = 0
+
+    coverage_rc_latplan = 0
+    applicable_rc_latplan = 0
+
+    # 
+    for realcounter, both_states_and_ac in enumerate(loaded_dataset):
+
+        print("realcounter {} / {}".format(realcounter, len(loaded_dataset)))
+
+        hla_id = both_states_and_ac[-1]
+
+
+        init_ = both_states_and_ac[:-1][:len(both_states_and_ac[:-1])//2]
+        goal_ = both_states_and_ac[:-1][len(both_states_and_ac[:-1])//2:]
+
+
+        # COVERAGE OF R-LATPLAN ACTIONS
+        
+        for thecounter, (ac_name, values) in enumerate(loaded_normal_actions.items()):
+            
+            preconds = values[0]
+            effects = values[1]
+
+            preconds_pos = preconds[:len(preconds)//2]
+            preconds_neg = preconds[len(preconds)//2:]
+
+            effects_add = effects[:len(effects)//2]
+            effects_del = effects[len(effects)//2:]
+
+            # print("init_")
+            # print(init_)
+
+            # print("goal_")
+            # print(goal_)
+
+            # exit()
+
+
+            ### TEST if action is Applicable
+
+            applicable = True
+
+            # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+            if not np.array_equal(init_ & preconds_pos, preconds_pos):
+                applicable = False
+
+            # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+            if np.any(preconds_neg & init_):
+                applicable = False
+
+            if applicable:
+                applicable_r_latplan += 1
+                # now, generate the next state
+                # apply the ADD effects
+                next_state = init_ | effects_add
+                # apply the DEL effects
+                next_state = next_state & ~effects_del
+
+                if np.array_equal(next_state, goal_):
+
+                    #if str(hla_id) == str(ac_name.split("_")[0]):
+                    coverage_r_latplan += 1
+
+
+        # COVERAGE OF RC-LATPLAN ACTIONS
+        
+        for thecounter, (ac_name, values) in enumerate(loaded_clustered_actions.items()):
+
+            # hla_id
+            # init_
+            # goal_
+            # 
+            # 
+
+            data_types = list(values.keys())
+
+            # 1) FIRST CHECK GENERAL PRECOND
+            
+            generally_applicable = True
+
+            if "gen_precond_and" in data_types and values["gen_precond_and"].size != 0:
+
+                gen_precond_and = values["gen_precond_and"]
+
+                preconds_pos = gen_precond_and[:len(gen_precond_and)//2]
+                preconds_neg = gen_precond_and[len(gen_precond_and)//2:]
+
+                # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+                if not np.array_equal(init_ & preconds_pos, preconds_pos):
+                    generally_applicable = False
+
+                # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+                if np.any(preconds_neg & init_):
+                    generally_applicable = False
+
+            if "gen_precond_ors" in data_types and values["gen_precond_ors"].size != 0:
+                
+                gen_precond_ors = values["gen_precond_ors"]
+
+                # testing if an and_or works
+                one_ors_is_complying = False
+
+                for an_or in gen_precond_ors:
+                    an_or_pos = an_or[:len(an_or)//2]
+                    an_or_neg = an_or[len(an_or)//2:]
+
+                    # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
+                    if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
+                        one_ors_is_complying = True
+                        break
+
+                if not one_ors_is_complying:
+                    generally_applicable = False
+
+
+
+            # 2) CONSTRUCT LIST OF APPLICABLE EFFECTS (in two phases)
+            applicable_effects = np.zeros((len(init_)*2,))
+            # alors... 
+
+            if "gen_effects_and" in data_types:
+
+                applicable_effects = values["gen_effects_and"]
+
+            for keyy, valuee in values.items():
+                
+                # 
+                if keyy.startswith("effects_when_"):
+                    
+                    final_keys = list(valuee.keys())
+
+                    when_precond_applicable = True
+
+                    when_precond_and_applicable = True
+
+                    if "when_precond_and" in final_keys:
+                        
+                        when_precond_and = valuee["when_precond_and"]
+                        when_precond_and_pos = when_precond_and[:len(when_precond_and)//2]
+                        when_precond_and_neg = when_precond_and[len(when_precond_and)//2:]
+
+                        # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+                        if not np.array_equal(init_ & when_precond_and_pos, when_precond_and_pos):
+                            when_precond_and_applicable = False
+
+                        # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+                        if np.any(when_precond_and_neg & init_):
+                            when_precond_and_applicable = False
+
+                    when_precond_or_applicable = True
+
+                    if "when_precond" in final_keys:
+
+                        when_precond_ors = values["when_precond_ors"]
+
+                        # testing if an and_or works
+                        one_ors_is_complying = False
+
+                        for an_or in when_precond_orss:
+                            an_or_pos = an_or[:len(an_or)//2]
+                            an_or_neg = an_or[len(an_or)//2:]
+
+                            # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
+                            if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
+                                one_ors_is_complying = True
+                                break
+
+                        if not one_ors_is_complying:
+                            when_precond_or_applicable = False
+
+                    if not when_precond_and_applicable or not when_precond_or_applicable:
+                        when_precond_applicable = False
+
+                    
+
+                    if when_precond_applicable:
+
+                        if "effect" in final_keys:
+                            effect_index = valuee["effect"]
+                            applicable_effects[effect_index] = 1
+                        else:
+                            print("PROBLEM: seems to have some preconditions of a when without the EFFECT !!!!")
+                            exit()
+                        
+
+
+                    #valuee
+
+            if generally_applicable:
+
+                applicable_rc_latplan += 1
+
+                effects_add_ = applicable_effects[:len(applicable_effects)//2]
+                effects_del_ = applicable_effects[len(applicable_effects)//2:]
+
+                next_state = init_ | effects_add_
+                next_state = next_state & ~effects_del_
+                if np.array_equal(next_state, goal_):
+                    #if str(hla_id) == str(ac_name.split("_")[0]):
+                    coverage_rc_latplan += 1
+
+
+            #
+            #   dico_clusters_binary_desc[cluster_long_id]["gen_precond_and"]
+            #   dico_clusters_binary_desc[cluster_long_id]["gen_precond_ors"]
+            #   dico_clusters_binary_desc[cluster_long_id]["gen_effects_and"]
+            #   dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_and"]
+            #   dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"]
+            #   dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["effect"]
+
+    # COVERAGE RC LATPLAN !!!!! comment qu'on fait ?
+
+
+
+    print("coverage_r_latplan is {}".format(str(coverage_r_latplan))) # 72 / 1469
+
+    print("coverage_RC_latplan is {}".format(str(coverage_rc_latplan)))
+
+
+    print("applicable_r_latplan {}".format(str(applicable_r_latplan)))
+    print("applicable_rc_latplan {}".format(str(applicable_rc_latplan)))
+
+    exit()
+
 elif args.task == "gen_plans":
 
     ### from the domain PDDL generated 
@@ -571,7 +829,9 @@ elif args.task == "gen_plans":
         #domain_file = "THENEWDOMAINBIS.pddl"
         #domain_file = "domainClustered_VeryHigh.pddl"
         #domain_file = "domainClustered_llas_True_only_effects_speWhens.pddl"
-        domain_file = "domainClustered_llas_True_only_effects.pddl"
+        #domain_file = "domainClustered_llas_True_only_effects.pddl"
+        domain_file = "domainClustered_llas_True_only_effects_True.pddl"
+
 
         if not "partial" in args.dataset_folder:
             
