@@ -1593,9 +1593,7 @@ def run(path,transitions,extra=None):
         #           }
         #}
         
-        # OUAIS MAIS... te faut aussi les ID de chaque putain de transitions
 
-        # DONC, au lieu de mettre les Hash mets les ID
 
         # loop over the train set (without dupplicate)
         # AND group the transitions into their respective High Level Actions

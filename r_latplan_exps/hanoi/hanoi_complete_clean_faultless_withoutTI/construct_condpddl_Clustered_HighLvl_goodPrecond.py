@@ -759,9 +759,7 @@ for num_action in range(0, 22):
     general_or_and += ")"
     # print(general_or_and)
     # exit()
-    #  what fucking ever
 
-    ####   then... tu group contruis pour chaque action, le putain de AND
     
 
     #print(final_choice)
