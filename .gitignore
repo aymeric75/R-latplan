@@ -13,6 +13,7 @@
 *.npz
 *.h5
 *.p
+*.pkl
 *events.out*
 learn/events*
 /mnist_model/
