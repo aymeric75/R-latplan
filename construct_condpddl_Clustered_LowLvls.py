@@ -368,6 +368,18 @@ two_tabs_space  = "         "
 # dico_highlvlid_lowlvlactions 
 
 
+print(dico_highlvlid_lowlvlactions)
+exit()
+# print(len(dico_highlvlid_lowlvlactions))
+
+# somme_llas = 0
+# for kkk, vvv in dico_highlvlid_lowlvlactions.items():
+
+#     somme_llas += len(vvv)
+
+# print(somme_llas) # 1177 car 9 actions sans effets (donc dans le PDDL yen a 1186)
+# exit()
+
 
 ###################
 ###################   II. PREPARE THE STRING TO WRITE INTO THE PDDL FILE (whole_actions_str)
@@ -623,6 +635,8 @@ for num_action in range(0, nber_hlas):
         # print(intersection_in_preconds)
 
         # latent_size
+
+        # CHECK si ya des verif de confitions faites quand un vecteur est vide par ex
         
         
         dico_clusters_binary_desc[cluster_long_id]["gen_precond_and"] = np.zeros((latent_size*2))
@@ -707,7 +721,11 @@ for num_action in range(0, nber_hlas):
                 gen_gen_or += ell + " "
             gen_gen_or += ")"
 
-        gen_gen_precond = "(AND "
+        gen_gen_precond = ""
+        if len(literals_of_intersection_str_list) > 0:
+            gen_gen_precond += "(AND "
+
+        # ce "AND" tu t'en passe uniquement si ya pas de literals_of_intersection_str_list 
 
         gen_gen_precond += gen_gen_inter
         gen_gen_precond += gen_gen_or
@@ -718,7 +736,8 @@ for num_action in range(0, nber_hlas):
         if or_str_of_gen_precond_for_clus != "":
             gen_gen_precond += or_str_of_gen_precond_for_clus
 
-        gen_gen_precond += ")"
+        if len(literals_of_intersection_str_list) > 0:
+            gen_gen_precond += ")"
 
 
         #if id_ < 3:
@@ -1108,16 +1127,6 @@ for num_action in range(0, nber_hlas):
     gen_gen_gen_precond += ")"
 
 
-    # high_lvl_action_str = "(:action a"+str(num_action)+"\n"
-    # high_lvl_action_str += two_tabs_space + ":parameters ()\n"
-    # high_lvl_action_str += two_tabs_space + ":precondition "+gen_gen_gen_precond+"\n"
-    # #high_lvl_action_str += two_tabs_space + ":precondition ()"+"\n"
-    # #high_lvl_action_str += two_tabs_space + ":precondition "+general_or_and+"\n"
-    # high_lvl_action_str += two_tabs_space + ":effect (AND \n"
-    # high_lvl_action_str += two_tabs_space + two_tabs_space + gen_gen_gen_whens_for_cluster
-    # high_lvl_action_str += two_tabs_space + ")\n"
-    # high_lvl_action_str += ")\n"
-
 
     # high_lvl_action_str_gen += high_lvl_action_str + "\n"
 
@@ -1213,9 +1222,6 @@ with open(base_dir + "/" + filename, mode="wb") as f:
     pickle.dump(dico_normal_binary_desc, f)
 
 
-
-
-exit()
 
 ###################
 ###################   IV. WRITE THE PDDL 

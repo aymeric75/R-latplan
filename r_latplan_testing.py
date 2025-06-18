@@ -393,6 +393,176 @@ if args.task == "gen_invariants":
 
 
 
+def apply_action(state, values, style):
+
+    next_state = False
+
+    if style == "r_latplan":
+
+        preconds = values[0]
+        effects = values[1]
+
+        preconds_pos = preconds[:len(preconds)//2]
+        preconds_neg = preconds[len(preconds)//2:]
+
+        effects_add = effects[:len(effects)//2]
+        effects_del = effects[len(effects)//2:]
+
+        ### TEST if action is Applicable
+        applicable = True
+
+        # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+        if (not np.array_equal(init_ & preconds_pos, preconds_pos)):
+            applicable = False
+
+        # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+        if np.any(preconds_neg & init_) and not np.all(preconds_neg == 0):
+            applicable = False
+
+        if applicable:
+            next_state = init_ | effects_add
+            next_state = next_state & ~effects_del
+
+
+    elif style == "rc_latplan":
+
+
+        data_types = list(values.keys())
+
+
+        generally_applicable = False
+
+        # 
+        if len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) == 0:
+
+
+            preconds_pos = values["gen_precond_and"][:len(values["gen_precond_and"])//2]
+            preconds_neg = values["gen_precond_and"][len(values["gen_precond_and"])//2:]
+
+            if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                generally_applicable = True
+
+        elif len(values["gen_precond_and"]) == 0 and len(values["gen_precond_ors"]) > 0:
+
+            for eleeee in values["gen_precond_ors"]:
+
+
+                gen_precond_ors = values["gen_precond_ors"]
+                preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
+                preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
+
+                if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                    generally_applicable = True
+
+        elif len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) > 0:
+
+            for eleeee in values["gen_precond_ors"]:
+
+                gen_precond_ors = eleeee | values["gen_precond_and"]
+                preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
+                preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
+
+                if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                    generally_applicable = True
+
+
+
+
+        # 2) CONSTRUCT LIST OF APPLICABLE EFFECTS (in two phases)
+        applicable_effects = np.zeros((len(init_)*2,))
+        # alors... 
+
+        if "gen_effects_and" in data_types:
+            applicable_effects = values["gen_effects_and"]
+
+        for keyy, valuee in values.items():
+
+            if keyy.startswith("effects_when_"):
+            
+                final_keys = list(valuee.keys())
+                when_precond_applicable = True
+                when_precond_and_applicable = True
+
+                if "when_precond_and" in final_keys:
+                    
+                    when_precond_and = valuee["when_precond_and"]
+                    when_precond_and_pos = when_precond_and[:len(when_precond_and)//2]
+                    when_precond_and_neg = when_precond_and[len(when_precond_and)//2:]
+
+                    # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+                    if not np.array_equal(init_ & when_precond_and_pos, when_precond_and_pos):
+                        when_precond_and_applicable = False
+
+                    # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+                    if np.any(when_precond_and_neg & init_):
+                        when_precond_and_applicable = False
+
+                when_precond_or_applicable = True
+
+                if "when_precond" in final_keys:
+
+                    when_precond_ors = values["when_precond_ors"]
+
+                    # testing if an and_or works
+                    one_ors_is_complying = False
+
+                    for an_or in when_precond_orss:
+                        an_or_pos = an_or[:len(an_or)//2]
+                        an_or_neg = an_or[len(an_or)//2:]
+
+                        # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
+                        if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
+                            one_ors_is_complying = True
+                            break
+
+                    if not one_ors_is_complying:
+                        when_precond_or_applicable = False
+
+                if not when_precond_and_applicable or not when_precond_or_applicable:
+                    when_precond_applicable = False
+
+                if when_precond_applicable:
+                    if "effect" in final_keys:
+                        effect_index = valuee["effect"]
+                        applicable_effects[effect_index] = 1
+                    else:
+                        print("PROBLEM: seems to have some preconditions of a when without the EFFECT !!!!")
+                        exit()
+                    
+
+
+                #valuee
+
+        if generally_applicable:
+
+            effects_add_ = applicable_effects[:len(applicable_effects)//2]
+            effects_del_ = applicable_effects[len(applicable_effects)//2:]
+            next_state = init_ | effects_add_
+            next_state = next_state & ~effects_del_
+
+
+    return next_state
+
+
+
+def apply_actions(states_to_test, actions, style="r_latplan"):
+
+    new_states = []
+    new_states_hashes = []
+    # 
+    for state in states_to_test:
+
+        for kkk, values in actions.items():
+            new_state = apply_action(state, values, style)
+            if isinstance(new_state, np.ndarray) and tuple(new_state.ravel()) not in new_states_hashes:
+                new_states.append(new_state)
+                new_states_hashes.append(tuple(new_state.ravel()))
+
+    return new_states, new_states_hashes
+
+
+
+
 
 if args.task == "generate_pddl":
     
@@ -546,7 +716,6 @@ elif args.task == "gen_dfa_array":
     result = subprocess.run(['python', script_path] + args_list, capture_output=False, text=True)
 
 
-
 elif args.task == "test_coverage_on_full_dfa":
 
 
@@ -563,7 +732,8 @@ elif args.task == "test_coverage_on_full_dfa":
     # load the full dfa
     loaded_dataset = load_dataset(exp_folder + "/all_transis_and_action.p")
 
-
+    # print(len(loaded_dataset)) # 1469
+    # exit()
 
     # it's a list, each ele is a np array of length state0 x state0 x 1 (high lvl id)
 
@@ -571,14 +741,84 @@ elif args.task == "test_coverage_on_full_dfa":
     loaded_normal_actions = load_dataset(exp_folder + "/dico_normal_binary_desc.p")
 
 
+    # print(len(loaded_normal_actions))
+    # exit() 1177
 
     coverage_r_latplan = 0
     applicable_r_latplan = 0
 
     coverage_rc_latplan = 0
     applicable_rc_latplan = 0
+    locally_applicable_rc_latplan = 0
+    # looping over ALL (full dfa) transitions 
 
-    # 
+    
+
+
+
+
+
+    #################################  COVERAGE OF R-LATPLAN ACTIONS ###############################
+
+    states_to_test = []
+    states_to_test_hashes = []
+    states_tested = []
+    states_tested_hashes = []
+
+    for realcounter, both_states_and_ac in enumerate(loaded_dataset):
+        init_ = both_states_and_ac[:-1][:len(both_states_and_ac[:-1])//2]
+        
+        if tuple(init_.ravel()) not in states_to_test_hashes:
+            states_to_test.append(init_)
+            states_to_test_hashes.append(tuple(init_.ravel()))
+
+
+
+
+    while True:
+
+
+        print(len(states_tested))
+
+        # 
+        new_states, new_states_hashes = apply_actions(states_to_test, loaded_normal_actions, style="r_latplan")
+
+        print(len(new_states_hashes))
+        print(len(new_states))
+
+        exit()
+
+        # remove fr
+
+        for s in new_states:
+            # if s not in states_tested:
+            if tuple(s.ravel()) not in states_tested_hashes:
+                states_tested.append(s)
+                states_tested_hashes.append(tuple(s.ravel()))
+
+
+        states_to_test = []
+
+        print(new_states)
+
+
+        #exit()
+        for s in new_states:
+            print(tuple(s.ravel()))
+
+            if tuple(s.ravel()) not in states_tested_hashes:
+                print("was here")
+                states_to_test.append(s)
+                states_to_test_hashes.append(tuple(s.ravel()))
+
+
+        if len(states_to_test) == 0:
+            break
+
+    print("states_tested_hashes !!!!")
+    print(len(states_tested_hashes))
+    exit()
+
     for realcounter, both_states_and_ac in enumerate(loaded_dataset):
 
         print("realcounter {} / {}".format(realcounter, len(loaded_dataset)))
@@ -589,13 +829,29 @@ elif args.task == "test_coverage_on_full_dfa":
         init_ = both_states_and_ac[:-1][:len(both_states_and_ac[:-1])//2]
         goal_ = both_states_and_ac[:-1][len(both_states_and_ac[:-1])//2:]
 
+        all_effects_r_latplan = []
+
+        preconds_sets_r_latplan = []
+
+
+
+
+
+
+
 
         # COVERAGE OF R-LATPLAN ACTIONS
-        
+        # looping over all R-latplan actions
         for thecounter, (ac_name, values) in enumerate(loaded_normal_actions.items()):
-            
+
             preconds = values[0]
+
+            preconds_sets_r_latplan.append(preconds)
+
             effects = values[1]
+
+
+            all_effects_r_latplan.append(effects)
 
             preconds_pos = preconds[:len(preconds)//2]
             preconds_neg = preconds[len(preconds)//2:]
@@ -603,25 +859,22 @@ elif args.task == "test_coverage_on_full_dfa":
             effects_add = effects[:len(effects)//2]
             effects_del = effects[len(effects)//2:]
 
-            # print("init_")
-            # print(init_)
-
-            # print("goal_")
-            # print(goal_)
-
-            # exit()
-
-
             ### TEST if action is Applicable
 
             applicable = True
 
             # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
-            if not np.array_equal(init_ & preconds_pos, preconds_pos):
+            if (not np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.all(preconds_pos == 0):
+                if preconds_pos.size == 0 or init_.size == 0:
+                    prin("PROBLEM1 ")
+                    exit()
                 applicable = False
 
             # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
-            if np.any(preconds_neg & init_):
+            if np.any(preconds_neg & init_) and not np.all(preconds_neg == 0):
+                if preconds_neg.size == 0 or init_.size == 0:
+                    prin("PROBLEM1 ")
+                    exit()
                 applicable = False
 
             if applicable:
@@ -638,57 +891,196 @@ elif args.task == "test_coverage_on_full_dfa":
                     coverage_r_latplan += 1
 
 
+        print("all_effects_r_latplan")
+        print(all_effects_r_latplan)
+        print(len(all_effects_r_latplan))
+
+
+
         # COVERAGE OF RC-LATPLAN ACTIONS
-        
+        nber_preconds_sets_total = 0
+        nber_preconds_sets_total_bis = 0
+        set_of_preconds_sets = []
+
+        preconds_sets = []
+
+        all_effects_rc_latplan = []
+
         for thecounter, (ac_name, values) in enumerate(loaded_clustered_actions.items()):
 
             # hla_id
             # init_
             # goal_
             # 
-            # 
+
+            nb_of_locally_applicable_rc_latplan = 0
+
+
+            nber_preconds_sets = 0 # for test purpose only
 
             data_types = list(values.keys())
 
-            # 1) FIRST CHECK GENERAL PRECOND
+            # # 1) FIRST CHECK GENERAL PRECOND
             
-            generally_applicable = True
+            # generally_applicable = True
 
-            if "gen_precond_and" in data_types and values["gen_precond_and"].size != 0:
+            # if "gen_precond_and" in data_types and values["gen_precond_and"].size != 0:
 
-                gen_precond_and = values["gen_precond_and"]
-
-                preconds_pos = gen_precond_and[:len(gen_precond_and)//2]
-                preconds_neg = gen_precond_and[len(gen_precond_and)//2:]
-
-                # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
-                if not np.array_equal(init_ & preconds_pos, preconds_pos):
-                    generally_applicable = False
-
-                # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
-                if np.any(preconds_neg & init_):
-                    generally_applicable = False
-
-            if "gen_precond_ors" in data_types and values["gen_precond_ors"].size != 0:
-                
-                gen_precond_ors = values["gen_precond_ors"]
-
-                # testing if an and_or works
-                one_ors_is_complying = False
-
-                for an_or in gen_precond_ors:
-                    an_or_pos = an_or[:len(an_or)//2]
-                    an_or_neg = an_or[len(an_or)//2:]
-
-                    # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
-                    if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
-                        one_ors_is_complying = True
-                        break
-
-                if not one_ors_is_complying:
-                    generally_applicable = False
+            #     gen_precond_and = values["gen_precond_and"]
 
 
+            #     if len(gen_precond_and) > 0:
+            #         nber_preconds_sets += 1
+            #         nb_of_locally_applicable_rc_latplan += 1
+
+            #     preconds_pos = gen_precond_and[:len(gen_precond_and)//2]
+            #     preconds_neg = gen_precond_and[len(gen_precond_and)//2:]
+
+            #     # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
+            #     if not np.array_equal(init_ & preconds_pos, preconds_pos):
+            #         if preconds_pos.size == 0 or init_.size == 0:
+            #             print("PROBLEM2 ")
+            #             exit()
+            #         elif np.all(preconds_pos == 0):
+            #             print("PROBLEM21 ")
+            #             exit()
+
+
+            #         generally_applicable = False
+
+            #     # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
+            #     if np.any(preconds_neg & init_):
+            #         if preconds_neg.size == 0 or init_.size == 0:
+            #             print("PROBLEM2 ")
+            #             exit()
+            #         elif np.all(preconds_neg == 0):
+            #             print("PROBLEM21 ")
+            #             exit()
+
+            #         generally_applicable = False
+
+            # bordel de merde
+            #   
+
+            # ya que le AND
+            # ya que le OR
+            # ya les deux
+
+
+            set_of_preconds_sets_for_this_cluster = []
+
+
+            ##### LES 3 CAS POUR LESQUELS ON VA TESTER ET CONSTRUITE LA GENERALE PRECOND
+            #### 
+
+            generally_applicable = False
+
+            # 
+            applicable_rc_latplan_for_this_cluster = 0
+
+
+            if len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) == 0:
+                # nber_preconds_sets_total_bis
+                nber_preconds_sets_total_bis += 1
+                set_of_preconds_sets_for_this_cluster.append(values["gen_precond_and"])
+
+                preconds_pos = values["gen_precond_and"][:len(values["gen_precond_and"])//2]
+                preconds_neg = values["gen_precond_and"][len(values["gen_precond_and"])//2:]
+
+                if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                    generally_applicable = True
+                    applicable_rc_latplan += 1
+                    applicable_rc_latplan_for_this_cluster += 1
+
+            elif len(values["gen_precond_and"]) == 0 and len(values["gen_precond_ors"]) > 0:
+
+                for eleeee in values["gen_precond_ors"]:
+
+                    nber_preconds_sets_total_bis += 1
+                    set_of_preconds_sets_for_this_cluster.append(values["gen_precond_ors"])
+
+                    gen_precond_ors = values["gen_precond_ors"]
+                    preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
+                    preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
+
+                    if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                        generally_applicable = True
+                        applicable_rc_latplan += 1
+                        applicable_rc_latplan_for_this_cluster += 1
+
+            elif len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) > 0:
+
+                for eleeee in values["gen_precond_ors"]:
+                    set_of_preconds_sets_for_this_cluster.append(eleeee | values["gen_precond_and"])
+                    nber_preconds_sets_total_bis += 1
+
+
+                    gen_precond_ors = eleeee | values["gen_precond_and"]
+                    preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
+                    preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
+
+                    if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                        generally_applicable = True
+                        applicable_rc_latplan += 1
+                        applicable_rc_latplan_for_this_cluster += 1
+
+
+            if len(set_of_preconds_sets_for_this_cluster) > 0:
+                set_of_preconds_sets.extend(set_of_preconds_sets_for_this_cluster)
+
+
+            if len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) > 0:
+                nb_of_locally_applicable_rc_latplan -= 1
+
+
+            # # and generally_applicable == True
+            # if ("gen_precond_ors" in data_types) and (values["gen_precond_ors"].size != 0) and (generally_applicable):
+                                
+
+            #     gen_precond_ors = values["gen_precond_ors"]
+
+            #     # testing if an and_or works
+            #     one_ors_is_complying = False
+
+            #     if len(gen_precond_ors) == 0:
+            #         print("PROBLEM 33")
+            #         exit()
+            #     else:
+                    
+            #         if nber_preconds_sets == 1:
+            #             nber_preconds_sets -= 1
+            #         nber_preconds_sets += len(gen_precond_ors)
+
+            #     for an_or in gen_precond_ors:
+
+
+            #         if np.all(an_or == 0):
+            #             continue
+
+            #         an_or_pos = an_or[:len(an_or)//2]
+            #         an_or_neg = an_or[len(an_or)//2:]
+
+            #         # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
+            #         if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
+
+            #             if an_or_pos.size == 0 or init_.size == 0 or an_or_neg.size == 0:
+            #                 print("PROBLEM22 ")
+            #                 exit()
+
+            #             elif np.all(an_or == 0):
+            #                 print(an_or)
+            #                 print("PROBLEM221 ")
+            #                 exit()
+
+            #             # 
+            #             one_ors_is_complying = True
+            #             nb_of_locally_applicable_rc_latplan += 1
+            #             #break
+
+            #     if not one_ors_is_complying:
+            #         generally_applicable = False
+
+            locally_applicable_rc_latplan += nb_of_locally_applicable_rc_latplan
 
             # 2) CONSTRUCT LIST OF APPLICABLE EFFECTS (in two phases)
             applicable_effects = np.zeros((len(init_)*2,))
@@ -698,11 +1090,16 @@ elif args.task == "test_coverage_on_full_dfa":
 
                 applicable_effects = values["gen_effects_and"]
 
+            # going through the "values" of the cluster
+
+
             for keyy, valuee in values.items():
                 
                 # 
                 if keyy.startswith("effects_when_"):
                     
+
+
                     final_keys = list(valuee.keys())
 
                     when_precond_applicable = True
@@ -764,8 +1161,8 @@ elif args.task == "test_coverage_on_full_dfa":
 
             if generally_applicable:
 
-                applicable_rc_latplan += 1
-
+                #### MOUAIS mais, en gros, à chaque putain d'état, faut essayer uniquement les effects qui sont applicables
+            
                 effects_add_ = applicable_effects[:len(applicable_effects)//2]
                 effects_del_ = applicable_effects[len(applicable_effects)//2:]
 
@@ -773,7 +1170,7 @@ elif args.task == "test_coverage_on_full_dfa":
                 next_state = next_state & ~effects_del_
                 if np.array_equal(next_state, goal_):
                     #if str(hla_id) == str(ac_name.split("_")[0]):
-                    coverage_rc_latplan += 1
+                    coverage_rc_latplan += 1*applicable_rc_latplan_for_this_cluster
 
 
             #
@@ -784,18 +1181,51 @@ elif args.task == "test_coverage_on_full_dfa":
             #   dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_ors"]
             #   dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["effect"]
 
+            nber_preconds_sets_total += nber_preconds_sets
+
+
+
+
+    from collections import Counter
+
+    def arrays_equal_unordered(list1, list2):
+        if len(list1) != len(list2):
+            return False
+
+        # Convert each array to a hashable type (e.g., bytes or tuple)
+        def to_hashable(arr):
+            return arr.tobytes()  # Or tuple(arr.flatten()), depending on use case
+
+        counter1 = Counter(to_hashable(arr) for arr in list1)
+        counter2 = Counter(to_hashable(arr) for arr in list2)
+
+        return counter1 == counter2
+
+
+    # print("set_of_preconds_sets")
+    # print(len(set_of_preconds_sets))
+
+    # print("len preconds_sets_r_latplan")
+    # print(len(preconds_sets_r_latplan))
+
+    ##### ALORS:
+
+    ### pour RC Latplan, 
+
+
+    print(arrays_equal_unordered(set_of_preconds_sets, preconds_sets_r_latplan))  # Output: True
+
     # COVERAGE RC LATPLAN !!!!! comment qu'on fait ?
 
 
-
     print("coverage_r_latplan is {}".format(str(coverage_r_latplan))) # 72 / 1469
-
     print("coverage_RC_latplan is {}".format(str(coverage_rc_latplan)))
-
 
     print("applicable_r_latplan {}".format(str(applicable_r_latplan)))
     print("applicable_rc_latplan {}".format(str(applicable_rc_latplan)))
-
+    # print(nber_preconds_sets_total) # 1177, bien ça !!!
+    # print("locally_applicable_rc_latplan {}".format(str(locally_applicable_rc_latplan)))
+    # print("nber_preconds_sets_total_bis {}".format(str(nber_preconds_sets_total_bis)))
     exit()
 
 elif args.task == "gen_plans":
