@@ -101,25 +101,56 @@ Hallucinated transitions or visual artifacts lead to execution failure.
 ---
 
 
-
 ## ▶️ Running the Experiments
 
-### Step 1: Generate Visual Traces
+### ⚙️ Typical Workflow
+
+This section outlines the typical workflow for training and evaluating **R-Latplan** models using image-based traces.
+
+---
+
+### **I. Data Generation**
+
+Generate visual traces and benchmark data using `PDDLGym`:
+
+#### ➤ Create clean traces from the domain
 ```bash
-python data/generate_traces.py --domain blocksworld
-````
-### Step 2: Train R-Latplan
+python r_latplan_create_dataset.py r_latplan create_clean_traces hanoi
+```
+
+#### ➤ Create symbolic benchmark problems
 ```bash
-python train.py --domain blocksworld --config configs/blocksworld.json
-````
-### Step 3: Generate PDDL Domain
+python r_latplan_create_dataset.py r_latplan create_exp_data_sym hanoi
+```
+
+#### ➤ Create image pairs for training/testing and planning problems
 ```bash
-python planner/generate_pddl.py --model outputs/blocksworld_model.pt
-````
-### Step 4: Solve with Fast Downward
+python r_latplan_create_dataset.py r_latplan create_exp_data_im hanoi complete clean faultless False NOT
+```
+
+---
+
+### **II. Training the Model**
+
+Train the R-Latplan model on the dataset generated above. Specify the same folder name used during data generation.
+
 ```bash
-python planner/run_planner.py --domain outputs/blocksworld.pddl --problem problems/blocksworld/p01.pddl
-````
+python r_latplan_start_training.py r_latplan hanoi hanoi_complete_clean_faultless_withoutTI
+```
+
+---
+
+### **III. Generating Outputs**
+
+#### ➤ Generate the PDDL domain from the learned model
+```bash
+python r_latplan_testing.py r_latplan generate_pddl hanoi hanoi_complete_clean_faultless_withoutTI
+```
+
+#### ➤ Generate plans using the PDDL and learned model
+```bash
+python r_latplan_testing.py r_latplan gen_plans hanoi hanoi_complete_clean_faultless_withoutTI
+```
 
 
 ---
