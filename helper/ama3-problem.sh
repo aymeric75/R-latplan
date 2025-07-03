@@ -9,11 +9,11 @@ trap "rm $out" ERR
 
 echo $0 $@
 start=`date +%s`
-if ! [ -s $out ]
-then
-    $(dirname $0)/../lisp/ama3-problem.bin $ig > $out
-    end=`date +%s`
-    echo $((end-start)) > $out.time
-fi
+# if ! [ -s $out ]
+# then
+$(dirname $0)/../lisp/ama3-problem.bin $ig > $out
+end=`date +%s`
+echo $((end-start)) > $out.time
+# fi
 
 

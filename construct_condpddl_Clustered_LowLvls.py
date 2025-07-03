@@ -47,7 +47,7 @@ parser.add_argument('--base_dir', default=None, type=str, help='Optional: Base p
 parser.add_argument('--data_folder', default=None, type=str, help='Optional: Base path of the current experiment data', required=False)
 
 
-parser.add_argument('--clustering_base_data', default=None, type=str, choices=['only_preconds', 'only_effects', 'both'], help='Optional: indicates which type of data are used for the clustering', required=True)
+parser.add_argument('--clustering_base_data', default=None, type=str, choices=['only_preconds', 'only_effects', 'both', 'by_same_effects'], help='Optional: indicates which type of data are used for the clustering', required=True)
 
 parser.add_argument('--clustering_with_penalty', default=None, type=str, help='Optional: indicates if we use or not the penalty in Jaccard distance', required=True)
 
@@ -368,8 +368,6 @@ two_tabs_space  = "         "
 # dico_highlvlid_lowlvlactions 
 
 
-print(dico_highlvlid_lowlvlactions)
-exit()
 # print(len(dico_highlvlid_lowlvlactions))
 
 # somme_llas = 0
@@ -377,9 +375,19 @@ exit()
 
 #     somme_llas += len(vvv)
 
-# print(somme_llas) # 1177 car 9 actions sans effets (donc dans le PDDL yen a 1186)
-# exit()
 
+def return_list_plus_negated_literals(listt, len_):
+
+    literals_plus_negation = []
+    for index_lit in range(len_):
+        if index_lit in listt:
+            literals_plus_negation.append(index_lit)
+            if index_lit < (len_ // 2):
+                literals_plus_negation.append(index_lit + (len_ // 2))
+            else:
+                literals_plus_negation.append((index_lit + (len_ // 2))%(len_ // 2))
+
+    return literals_plus_negation
 
 ###################
 ###################   II. PREPARE THE STRING TO WRITE INTO THE PDDL FILE (whole_actions_str)
@@ -559,7 +567,13 @@ for num_action in range(0, nber_hlas):
 
     
     #with open("clusterings/"+str(num_action)+"_clusters_True_both.txt", 'r') as ff:
-    with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+".txt", 'r') as ff:
+    # by_same_effects
+    if args.clustering_base_data == "by_same_effects":
+        cluster_file = base_dir+"/clusterings/"+str(num_action)+"_clusters_by_same_effects.txt"
+    else:
+        cluster_file = base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+".txt"
+    
+    with open(cluster_file, 'r') as ff:
 
         clusters = {}
 
@@ -631,8 +645,6 @@ for num_action in range(0, nber_hlas):
         intersection_in_preconds = np.all(clus["preconds"] == 1, axis=0).astype(np.uint8)
         literals_of_intersection = np.where(intersection_in_preconds)[0]
 
-        # print("intersection_in_preconds")
-        # print(intersection_in_preconds)
 
         # latent_size
 
@@ -688,9 +700,6 @@ for num_action in range(0, nber_hlas):
         literals_of_intersection_str_list = []
         for lii in literals_of_intersection:
             literals_of_intersection_str_list.append(atoms[lii])
-
-        
-        
 
         # if num_action == 8 and id_ == 1:
         #     print("literals_of_intersection_str_list")
@@ -795,7 +804,8 @@ for num_action in range(0, nber_hlas):
                 preconds_for_this_effect = clus["preconds"][indices_clust_elems_for_this_outside_effect] # retrieve the corresponding preconds of these llas
 
 
-                
+
+
                 intersection_in_when_preconds = np.all(preconds_for_this_effect == 1, axis=0).astype(np.uint8) # retrieve the "AND" of the preconds for this "when"
                 indices_of_inter_in_when_preconds = np.where(intersection_in_when_preconds)[0] # retrieve the indices of the preconds that are in common in all the llas of the "when"
 
@@ -840,10 +850,6 @@ for num_action in range(0, nber_hlas):
                     if len(tmp_preconds_group) > 0:
                         literals_of_the_ANDS_of_the_OR_in_when_precond.append(tmp_preconds_group)
                
-                # if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
-                #     print("literals_of_the_ANDS_of_the_OR_in_when_precondliterals_of_the_ANDS_of_the_OR_in_when_precond")
-                #     print(literals_of_the_ANDS_of_the_OR_in_when_precond)
-                #     exit()
 
 
                 # dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["when_precond_and"]
@@ -866,22 +872,14 @@ for num_action in range(0, nber_hlas):
                 # else:
                 #     preconds_paths_for_this_when = []
 
-
                 ########## END LOGICAL_EQUIVALENCE_TESTING ##########
-
-
-
-                ######## literals_of_intersection_in_when_preconds_str_list
-                ######## literals_of_extersection_in_when_preconds_str_list
                 
-                and_part_precond = ""
+                and_part_precond = " "
                 if len(literals_of_intersection_in_when_preconds_str_list) > 0:
                     for ll in literals_of_intersection_in_when_preconds_str_list:
                         and_part_precond += ll + " "  
 
-
                 or_part_precond = ""
-
 
                 if args.ors_in_whens_are_groups == "True":
 
@@ -911,9 +909,10 @@ for num_action in range(0, nber_hlas):
                 dico_clusters_binary_desc[cluster_long_id]["effects_when_"+str(thefindex)]["effect"] = index_lit
 
                 if args.ors_in_whens_are_groups == "True":
-                    if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
-                        or_part_precond += "(OR "
 
+                    if len(literals_of_the_ANDS_of_the_OR_in_when_precond) > 0:
+
+                        or_part_precond += " (OR "
 
                         for an_and in literals_of_the_ANDS_of_the_OR_in_when_precond:
                             
@@ -927,30 +926,124 @@ for num_action in range(0, nber_hlas):
 
                             or_part_precond += tmp_and_part
 
-
                         or_part_precond += ")"
   
-                        # print("or_part_precond")
-                        # print(or_part_precond)
-                        # exit()
                 else:
                     if len(literals_of_extersection_in_when_preconds_str_list) > 0:
-                        or_part_precond += "(OR "
+                        or_part_precond += " (OR "
                         for ll in literals_of_extersection_in_when_preconds_str_list:
                             or_part_precond += ll + " "
                         
                         or_part_precond += ")"
 
+                #####################################################################
+                ############### BUILDING anti_other_llps END ########################
+                #####################################################################
+
+                # 1) FIND THE LLAS (LLA1s) THAT APPLY TO THIS COND EFFECT (index_lit)
+
+                # 2) FIND THE LLAS (LLA2s) THAT SHOULD NOT APPLY TO THIS COND EFFECT
+
+                indices_clust_elems_for_NOT_this_outside_effect = np.where(clus["effects"][:, index_lit] == 0)[0] # indices of llas (in the clus) which effects "cover" the outside effect
+                preconds_for_NOT_this_effect = clus["preconds"][indices_clust_elems_for_NOT_this_outside_effect] # retrieve the corresponding preconds of these llas
+
+
+                # 3) REMOVE FROM THE LLP2s, WHATS ALREADY IN THE GENERAL PRECOND INTERSECTION
+
+                preconds_for_NOT_this_effect[:, literals_of_intersection] = 0
+
+                # remove any 0s row
+                preconds_for_NOT_this_effect = preconds_for_NOT_this_effect[~np.all(preconds_for_NOT_this_effect == 0, axis=1)]
+
+
+
+                # # 4) Test 1: if Preconds contradict with the AND lit lit part of the when CONDITION
+                # indices_to_remove = []
+                # for theindic, precond in enumerate(preconds_for_NOT_this_effect):
+
+           
+                #     entailed = np.all((intersection_in_when_preconds & precond) == precond)
+
+                #     # in precond entails the intersection in the when 
+                #     if not entailed:
+                #         indices_to_remove.append(theindic)                        
+                #     else:
+                #         print("precond ")
+                #         print(precond)
+                #         exit()
+
+                # preconds_for_NOT_this_effect = np.delete(preconds_for_NOT_this_effect, indices_to_remove, axis=0)
+
+                # 5) Test 2: 
+                indices_to_remove = []
+                for theindic, precond in enumerate(preconds_for_NOT_this_effect):
+
+                    for precond2 in preconds_of_when_minus_inter:
+
+                        entailed = np.all(precond[precond2 == 1] == 1)
+                        # in precond entails the intersection in the when 
+                        if not entailed:
+                            indices_to_remove.append(theindic)        
+
+                preconds_for_NOT_this_effect = np.delete(preconds_for_NOT_this_effect, indices_to_remove, axis=0)
+
+
+                # if preconds_for_NOT_this_effect.size != 0:
+                #     print(preconds_for_NOT_this_effect)
+                #     print("DDDD")
+                #     exit()
+
+                # 6) FOR EACH PRUNED LLP2, DO a (NOT (AND llp2_pruned))
+
+                ## build for each llp2 the list of stringified literals
+                preconds_for_NOT_this_effect_str = []
+                for roww in preconds_for_NOT_this_effect:
+                    roww_str = []
+                    indices_roww = np.where(roww)[0]
+                    for indix in indices_roww:
+                        roww_str.append(atoms[indix])
+                    if len(roww_str) > 0:
+                        preconds_for_NOT_this_effect_str.append(roww_str)
+
+                all_not_ands = ""
+
+                if len(preconds_for_NOT_this_effect_str) > 0:
+                    for an_and in preconds_for_NOT_this_effect_str:
+                        tmp_and_part = ""
+                        if len(an_and) > 1:
+                            tmp_and_part += " (AND "
+                        #or_part_precond += ll + " "
+                        for liiitt in an_and:
+                            tmp_and_part += liiitt + " "
+                        if len(an_and) > 1:
+                            tmp_and_part += ")"
+
+                        tmp_and_part = " (NOT " + tmp_and_part + " )"
+                        all_not_ands += tmp_and_part
+
+
+
+
+
+
+
+                anti_other_llps = all_not_ands
+
+                #####################################################################
+                ############### BUILDING anti_other_llps END ########################
+                #####################################################################
+
 
                 whole_condition_part = ""
 
-                if and_part_precond != "":
-                    whole_condition_part += "(AND "
-                    whole_condition_part += and_part_precond
-                    whole_condition_part += or_part_precond
-                    whole_condition_part += ")"
-                else:
-                    whole_condition_part = or_part_precond
+                whole_condition_part += "(AND "
+                whole_condition_part += anti_other_llps
+                whole_condition_part += and_part_precond
+                whole_condition_part += or_part_precond
+                whole_condition_part += ")"
+                # else:
+
+                #     whole_condition_part = or_part_precond
 
                 when_clause = two_tabs_space + "(when "
                 when_clause += whole_condition_part + "\n"
@@ -1054,7 +1147,29 @@ for num_action in range(0, nber_hlas):
         if str(args.specific_whens) == "False":
             all_conjunctions_for_when_of_gen_effects_str = ""
 
+        # sinon, avant de faire hanoi, 
 
+        #### WHAT is needed is:
+
+        ####      in the condition of each WHEN
+
+        ####               (which is already an (AND lit1 lit2 (OR (AND ) (AND ) (AND ))))
+
+        #######             AN ADDITIONAL logical formula of the form:
+
+        ######                      anti_others = (NOT (OR (AND precs1) (AND precs2) (AND precs3))
+
+        #####                           TO BE PLACED in the original conjunction of the when, eg,
+
+        ######                                      (AND lit1 lit2 anti_others (OR (AND ) (AND ) (AND ))))
+
+
+        ######   anti_others is, for a when, the negation of the disjunction of the conjunctions of preconditions
+
+        #####       of all the llas that DO NOT HAVE THIS EFFECT
+
+
+        ######      
 
         if all_conjunctions_for_when_of_gen_effects_str != "":
 
@@ -1231,8 +1346,11 @@ with open(base_dir + "/" + filename, mode="wb") as f:
 
 #" ors_in_whens_are_groups"
 
-name_pddl_file = "domainClustered_llas_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+str_for_whens+"_"+str(args.ors_in_whens_are_groups)
-#
+if args.clustering_base_data == "by_same_effects":
+    name_pddl_file = "domainClustered_llas_by_same_effects"
+else:
+    name_pddl_file = "domainClustered_llas_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+str_for_whens+"_"+str(args.ors_in_whens_are_groups)
+####
 
 #name_pddl_file = "EXAMPLE"
 

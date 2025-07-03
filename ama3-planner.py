@@ -188,42 +188,42 @@ def main(domainfile, problem_dir, heuristics, cycle, typee, sigma=None, network_
 
 
 
-            # ############ CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
-            # effectsToKeep = []
-            # for trans_id, act in enumerate(task.actions):
-            #     tmp_act_effects = act.effects
+            ############ CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+            effectsToKeep = []
+            for trans_id, act in enumerate(task.actions):
+                tmp_act_effects = act.effects
 
-            #     for eff in tmp_act_effects:
-            #         # print("EFF LITERAL")
-            #         # print(eff.literal)
-            #         integer = int(''.join(x for x in str(eff.literal) if x.isdigit()))
-            #         transformed_name = ""
-            #         if "Negated" in str(eff.literal):
-            #             transformed_name += "del_"+str(integer)
-            #         else:
-            #             transformed_name += "add_"+str(integer)
+                for eff in tmp_act_effects:
+                    # print("EFF LITERAL")
+                    # print(eff.literal)
+                    integer = int(''.join(x for x in str(eff.literal) if x.isdigit()))
+                    transformed_name = ""
+                    if "Negated" in str(eff.literal):
+                        transformed_name += "del_"+str(integer)
+                    else:
+                        transformed_name += "add_"+str(integer)
 
-            #         if transformed_name not in effectsToKeep:
-            #             effectsToKeep.append(transformed_name)
+                    if transformed_name not in effectsToKeep:
+                        effectsToKeep.append(transformed_name)
 
-            # goal_parts = list(task.goal.parts)
+            goal_parts = list(task.goal.parts)
 
-            # for part in goal_parts:
-            #     integer = int(''.join(x for x in str(part) if x.isdigit()))
-            #     transformed_name = ""
-            #     if "Negated" in str(part):
-            #         transformed_name += "del_"+str(integer)
-            #     else:
-            #         transformed_name += "add_"+str(integer)
+            for part in goal_parts:
+                integer = int(''.join(x for x in str(part) if x.isdigit()))
+                transformed_name = ""
+                if "Negated" in str(part):
+                    transformed_name += "del_"+str(integer)
+                else:
+                    transformed_name += "add_"+str(integer)
 
-            #     print("transformed_name is {}".format(transformed_name))
+                print("transformed_name is {}".format(transformed_name))
 
-            #     if transformed_name not in effectsToKeep:
-            #         goal_parts.remove(part)
-            # task.goal.parts = tuple(goal_parts)
+                if transformed_name not in effectsToKeep:
+                    goal_parts.remove(part)
+            task.goal.parts = tuple(goal_parts)
 
 
-            # ############ END CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
+            ############ END CODE FOR REMOVING NON PRESENT "EFFECTS" in the goal states ##################
 
 
 

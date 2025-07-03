@@ -243,6 +243,16 @@ def matrix_cross_compare(matrix: np.ndarray) -> np.ndarray:
 
 
 
+def group_identical_rows(arr):
+    # Convert each row to a tuple so it can be used as a dictionary key
+    row_dict = defaultdict(list)
+    for idx, row in enumerate(arr):
+        row_dict[tuple(row)].append(idx)
+    
+    return list(row_dict.values())
+
+
+
 
 
 ###################
@@ -360,9 +370,12 @@ all_clusters_preconds = {}
 
 high_lvl_action_str_gen = ""
 
+total_groups_count = 0
 
 
 for num_action in range(0, nber_hlas):
+
+    
 
     print("action is {}".format(str(num_action)))
 
@@ -440,17 +453,20 @@ for num_action in range(0, nber_hlas):
     # data used  -
     dico__ = {
 
-        "only_preconds" : binary_S,
-        "only_effects" : binary_Effects,
-        "both" : [binary_S, binary_Effects]
+        # "only_preconds" : binary_S,
+        # "only_effects" : binary_Effects,
+        # "both" : [binary_S, binary_Effects],
+        "by_same_effects": binary_Effects
     }
 
 
-    columns = [ "       ", "only_preconds", "only_effects", "both" ]
+    columns = [ "       ", "only_preconds", "only_effects", "both", "by_same_effects"]
 
     rows = []
 
-    for penal in (True, False):
+    #for penal in (True, False):
+    
+    for penal in (True,):
 
         row = []
 
@@ -459,59 +475,77 @@ for num_action in range(0, nber_hlas):
         for kkk, vvv in dico__.items():
 
 
-            clusters_, best_k_, best_score_ = clustering(vvv, penalized = penal, lamb = 1. )
+            if kkk == "by_same_effects":
+
+                # in this case, 
+                groups = group_identical_rows(vvv)
+   
+                total_groups_count += len(groups)
+
+                # donc
 
 
-            total_contradictory_preconds = 0
-            total_contradictory_effects = 0
 
-            total_nb_lit_preconds = 0
-            total_nb_lit_effects = 0
+                with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_by_same_effects.txt", 'w') as fff1:
+                    for value in groups:
+                        fff1.write(' '.join(map(str, value)) + '\n')
 
-            for cluster_id, members in sorted(clusters_.items()):
+            else:
+
+
+                clusters_, best_k_, best_score_ = clustering(vvv, penalized = penal, lamb = 1. )
+
+
+                total_contradictory_preconds = 0
+                total_contradictory_effects = 0
+
+                total_nb_lit_preconds = 0
+                total_nb_lit_effects = 0
+
+                for cluster_id, members in sorted(clusters_.items()):
+                    
+
+                    mask_comparing_two_halves_preconds = matrix_cross_compare(binary_S_for_cond_effects[members])
+                    mask_comparing_two_halves_effects = matrix_cross_compare(binary_Effects[members])
+
+                    nb_lit_preconds = len(np.where(sum_over_ax0(binary_S_for_cond_effects[members]))[0])
+                    nb_lit_effects = len(np.where(sum_over_ax0(binary_Effects[members]))[0])
+
+                    total_nb_lit_preconds += nb_lit_preconds
+                    total_nb_lit_effects += nb_lit_effects
+
+                    # pour chaque cluster, imprimer (eg z*) le nbre d'actions, les literals non contradictoires, les literaux contradictoires
+
+                    indices_lit_contr_preconds = np.where(mask_comparing_two_halves_preconds)[0]
+                    indices_lit_NON_contr_preconds = np.where(mask_comparing_two_halves_preconds == False)[0]
+
+                    indices_lit_contr_effects = np.where(mask_comparing_two_halves_effects)[0]
+                    indices_lit_NON_contr_effects = np.where(mask_comparing_two_halves_effects == False)[0]
+
+
+                    #### la distance: sinon tu la base "uniquement" sur les contrictions, ie, le plus il y a d'atoms contradictoire le + grand la distance
+
+                    total_contradictory_preconds += len(indices_lit_contr_preconds)
+                    total_contradictory_effects += len(indices_lit_contr_effects)
+
+
+
+                with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(penal)+"_"+str(kkk)+".txt", 'w') as fff:
+                    for value in clusters_.values():
+                        fff.write(' '.join(map(str, value)) + '\n')
+
                 
+                mean_contr_preconds = round(total_contradictory_preconds / len(clusters_), 2)
+                mean_contr_effects = round(total_contradictory_effects / len(clusters_), 2)
+                mean_nb_lit_preconds = math.ceil(total_nb_lit_preconds / len(clusters_))
+                mean_nb_lit_effects = math.ceil(total_nb_lit_effects / len(clusters_))
 
-                mask_comparing_two_halves_preconds = matrix_cross_compare(binary_S_for_cond_effects[members])
-                mask_comparing_two_halves_effects = matrix_cross_compare(binary_Effects[members])
-
-                nb_lit_preconds = len(np.where(sum_over_ax0(binary_S_for_cond_effects[members]))[0])
-                nb_lit_effects = len(np.where(sum_over_ax0(binary_Effects[members]))[0])
-
-                total_nb_lit_preconds += nb_lit_preconds
-                total_nb_lit_effects += nb_lit_effects
-
-                # pour chaque cluster, imprimer (eg z*) le nbre d'actions, les literals non contradictoires, les literaux contradictoires
-
-                indices_lit_contr_preconds = np.where(mask_comparing_two_halves_preconds)[0]
-                indices_lit_NON_contr_preconds = np.where(mask_comparing_two_halves_preconds == False)[0]
-
-                indices_lit_contr_effects = np.where(mask_comparing_two_halves_effects)[0]
-                indices_lit_NON_contr_effects = np.where(mask_comparing_two_halves_effects == False)[0]
+                print("penalty: {}, type: {}, nber clusters: {}, silouette: {}, mean_contr_preconds: {} / {}, mean_contr_effects: {} / {}, ".format(str(penal), kkk, best_k_, round(best_score_, 2), mean_contr_preconds, mean_nb_lit_preconds, mean_contr_effects, mean_nb_lit_effects))
 
 
-                #### la distance: sinon tu la base "uniquement" sur les contrictions, ie, le plus il y a d'atoms contradictoire le + grand la distance
+                text_ = "#cluster: {}\nsilhouette: {}\n#con_pre: {}\n#con_eff: {}".format(str(best_k_), str(round(best_score_, 2)), str(mean_contr_preconds), str(mean_contr_effects))
 
-                total_contradictory_preconds += len(indices_lit_contr_preconds)
-                total_contradictory_effects += len(indices_lit_contr_effects)
-
-
-
-            with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_"+str(penal)+"_"+str(kkk)+".txt", 'w') as fff:
-                for value in clusters_.values():
-                    fff.write(' '.join(map(str, value)) + '\n')
-
-            
-            mean_contr_preconds = round(total_contradictory_preconds / len(clusters_), 2)
-            mean_contr_effects = round(total_contradictory_effects / len(clusters_), 2)
-            mean_nb_lit_preconds = math.ceil(total_nb_lit_preconds / len(clusters_))
-            mean_nb_lit_effects = math.ceil(total_nb_lit_effects / len(clusters_))
-
-            print("penalty: {}, type: {}, nber clusters: {}, silouette: {}, mean_contr_preconds: {} / {}, mean_contr_effects: {} / {}, ".format(str(penal), kkk, best_k_, round(best_score_, 2), mean_contr_preconds, mean_nb_lit_preconds, mean_contr_effects, mean_nb_lit_effects))
-
-
-            text_ = "#cluster: {}\nsilhouette: {}\n#con_pre: {}\n#con_eff: {}".format(str(best_k_), str(round(best_score_, 2)), str(mean_contr_preconds), str(mean_contr_effects))
-
-            row.append(text_)
+                row.append(text_)
         
         rows.append(row)
         #print(rows)
@@ -521,3 +555,8 @@ for num_action in range(0, nber_hlas):
     # # Print the table
     # print(tabulate(rows, headers=columns, tablefmt="grid"))
     # exit()
+
+
+
+
+print("total number of groups {}".format(total_groups_count))

@@ -7,6 +7,17 @@ import subprocess
 import re 
 import shutil
 import numpy as np 
+import matplotlib
+import matplotlib.pyplot as plt
+
+
+
+
+import subprocess
+def echodo(cmd,*args,**kwargs):
+    #print(cmd,flush=True)
+    subprocess.run(cmd,*args,**kwargs)
+
 
 def switch_conda_environment(env_name):
     subprocess.run(f"conda activate {env_name}", shell=True)
@@ -72,15 +83,33 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
-parser.add_argument('task', type=str, choices=['generate_pddl', 'transform_into_clustered_pddl', 'cluster_llas', 'gen_plans', 'gen_dfa_array', 'compute_effects_shap_values_per_action', 'compute_pos_preconds_shap_values_per_action', 'compute_neg_preconds_shap_values_per_action', 'gen_invariants', 'test_coverage_on_full_dfa'], help='type of task to be performed')
+parser.add_argument(
+    'task', 
+    type=str, 
+    choices=[
+        'generate_pddl', 
+        'transform_into_clustered_pddl', 
+        'cluster_llas', 
+        'gen_plans', 
+        'gen_dfa_array',
+        'test_paths_each_pair', 
+        'debug',
+        'compute_effects_shap_values_per_action', 
+        'compute_pos_preconds_shap_values_per_action', 
+        'compute_neg_preconds_shap_values_per_action', 
+        'gen_invariants', 
+        'test_coverage_on_full_dfa',
+        'gen_images_per_cluster'
+        ], 
+    help='type of task to be performed')
+
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
 parser.add_argument('--use_base_to_load', default=None, type=str, help='Optional: Base path to load data from', required=False)
 
 parser.add_argument('--clustering_with_penalty', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates if we use or not the penalty in Jaccard distance', required=False)
-parser.add_argument('--clustering_base_data', default=None, type=str, choices=['only_preconds', 'only_effects', 'both'], help='Optional: indicates which type of data are used for the clustering', required=False)
-
+parser.add_argument('--clustering_base_data', default=None, type=str, choices=['only_preconds', 'only_effects', 'both', 'by_same_effects'], help='Optional: indicates which type of data are used for the clustering', required=False)
 
 parser.add_argument('--specific_whens', default=False, type =lambda x: x.lower() == 'true', help='Optional: indicates whether to use specific whens or not', required=False)
 
@@ -386,8 +415,6 @@ if args.task == "gen_invariants":
     # result = subprocess.run(['bash', script_path] + args_list, capture_output=False, text=True)
 
 
-
-    
     exit()
 
 
@@ -411,16 +438,16 @@ def apply_action(state, values, style):
         ### TEST if action is Applicable
         applicable = True
 
-        # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
-        if (not np.array_equal(init_ & preconds_pos, preconds_pos)):
+        # if NOT: where 1 in preconds_pos it's also 1 in state, then False
+        if (not np.array_equal(state & preconds_pos, preconds_pos)):
             applicable = False
 
-        # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
-        if np.any(preconds_neg & init_) and not np.all(preconds_neg == 0):
+        # if ANY where preconds_neg is 1, it s also 1 in state then problem (so not applicable) 
+        if np.any(preconds_neg & state):
             applicable = False
 
         if applicable:
-            next_state = init_ | effects_add
+            next_state = state | effects_add
             next_state = next_state & ~effects_del
 
 
@@ -439,7 +466,7 @@ def apply_action(state, values, style):
             preconds_pos = values["gen_precond_and"][:len(values["gen_precond_and"])//2]
             preconds_neg = values["gen_precond_and"][len(values["gen_precond_and"])//2:]
 
-            if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+            if (np.array_equal(state & preconds_pos, preconds_pos)) and not np.any(preconds_neg & state):
                 generally_applicable = True
 
         elif len(values["gen_precond_and"]) == 0 and len(values["gen_precond_ors"]) > 0:
@@ -451,7 +478,7 @@ def apply_action(state, values, style):
                 preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
                 preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
 
-                if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                if (np.array_equal(state & preconds_pos, preconds_pos)) and not np.any(preconds_neg & state):
                     generally_applicable = True
 
         elif len(values["gen_precond_and"]) > 0 and len(values["gen_precond_ors"]) > 0:
@@ -462,14 +489,14 @@ def apply_action(state, values, style):
                 preconds_pos = gen_precond_ors[:len(gen_precond_ors)//2]
                 preconds_neg = gen_precond_ors[len(gen_precond_ors)//2:]
 
-                if (np.array_equal(init_ & preconds_pos, preconds_pos)) and not np.any(preconds_neg & init_):
+                if (np.array_equal(state & preconds_pos, preconds_pos)) and not np.any(preconds_neg & state):
                     generally_applicable = True
 
 
 
 
         # 2) CONSTRUCT LIST OF APPLICABLE EFFECTS (in two phases)
-        applicable_effects = np.zeros((len(init_)*2,))
+        applicable_effects = np.zeros((len(state)*2,))
         # alors... 
 
         if "gen_effects_and" in data_types:
@@ -489,12 +516,12 @@ def apply_action(state, values, style):
                     when_precond_and_pos = when_precond_and[:len(when_precond_and)//2]
                     when_precond_and_neg = when_precond_and[len(when_precond_and)//2:]
 
-                    # if NOT: where 1 in preconds_pos it's also 1 in init_, then False
-                    if not np.array_equal(init_ & when_precond_and_pos, when_precond_and_pos):
+                    # if NOT: where 1 in preconds_pos it's also 1 in state, then False
+                    if not np.array_equal(state & when_precond_and_pos, when_precond_and_pos):
                         when_precond_and_applicable = False
 
-                    # if ANY where preconds_neg is 1, it s also 1 in init_ then problem (so not applicable) 
-                    if np.any(when_precond_and_neg & init_):
+                    # if ANY where preconds_neg is 1, it s also 1 in state then problem (so not applicable) 
+                    if np.any(when_precond_and_neg & state):
                         when_precond_and_applicable = False
 
                 when_precond_or_applicable = True
@@ -511,7 +538,7 @@ def apply_action(state, values, style):
                         an_or_neg = an_or[len(an_or)//2:]
 
                         # if (whre it's pos, it's also in init) and (whenever it's neg it's not in init) then this "or" works
-                        if np.array_equal(init_ & an_or_pos, an_or_pos) and not np.any(an_or_neg & init_):
+                        if np.array_equal(state & an_or_pos, an_or_pos) and not np.any(an_or_neg & state):
                             one_ors_is_complying = True
                             break
 
@@ -537,7 +564,7 @@ def apply_action(state, values, style):
 
             effects_add_ = applicable_effects[:len(applicable_effects)//2]
             effects_del_ = applicable_effects[len(applicable_effects)//2:]
-            next_state = init_ | effects_add_
+            next_state = state | effects_add_
             next_state = next_state & ~effects_del_
 
 
@@ -545,18 +572,34 @@ def apply_action(state, values, style):
 
 
 
-def apply_actions(states_to_test, actions, style="r_latplan"):
+def apply_actions(states_to_test, actions, all_dfa_states_hashes, style="r_latplan"):
 
     new_states = []
     new_states_hashes = []
-    # 
+    
+
+    # go over all the "starting" states
     for state in states_to_test:
 
+        # go over all the actions
         for kkk, values in actions.items():
-            new_state = apply_action(state, values, style)
-            if isinstance(new_state, np.ndarray) and tuple(new_state.ravel()) not in new_states_hashes:
+
+            # print("values")
+            # print(values)
+            # print("kkk")
+            # print(kkk)
+            hla_current = kkk.split("_")[0]
+
+            state_init = state["init"]
+            state_goal = state["goal"]
+            state_hla = state["hla"]
+
+            new_state = apply_action(state_init, values, style)
+            # if new_state is a np array, it means that it was well generated (and passed the applicable test as well)
+            if isinstance(new_state, np.ndarray) and tuple(new_state.ravel()) not in new_states_hashes and tuple(new_state.ravel()) in all_dfa_states_hashes and str(hla_current) == str(state_hla):
                 new_states.append(new_state)
                 new_states_hashes.append(tuple(new_state.ravel()))
+
 
     return new_states, new_states_hashes
 
@@ -646,7 +689,7 @@ elif args.task == "transform_into_clustered_pddl":
     # check that two other args are defined
 
 
-    if args.clustering_with_penalty is None:
+    if args.clustering_with_penalty is None and args.clustering_base_data != "by_same_effects":
         print("clustering_with_penalty arg required")
         exit()
 
@@ -654,7 +697,7 @@ elif args.task == "transform_into_clustered_pddl":
         print("clustering_base_data arg required")
         exit()
 
-    if args.ors_in_whens_are_groups is None:
+    if args.ors_in_whens_are_groups is None and args.clustering_base_data != "by_same_effects":
         print("ors_in_whens_are_groups arg required")
         exit()
 
@@ -765,58 +808,71 @@ elif args.task == "test_coverage_on_full_dfa":
     states_tested = []
     states_tested_hashes = []
 
+
+    #### loop over DFA states, put all the inits into states_to_test
     for realcounter, both_states_and_ac in enumerate(loaded_dataset):
         init_ = both_states_and_ac[:-1][:len(both_states_and_ac[:-1])//2]
-        
+        goal_ = both_states_and_ac[:-1][len(both_states_and_ac[:-1])//2:]
+
         if tuple(init_.ravel()) not in states_to_test_hashes:
-            states_to_test.append(init_)
+            states_to_test.append({"init": init_, "goal": goal_, "hla": both_states_and_ac[-1]})
             states_to_test_hashes.append(tuple(init_.ravel()))
 
+    all_dfa_states_hashes = states_to_test_hashes.copy()
 
+    print("all_dfa_states_hashes")
+    print(len(all_dfa_states_hashes))
+
+    # print("states_to_test")
+    # print(len(states_to_test)) # 256 apparemment
+    #### mmmmh, MOUAIS donc en fait dans states_tested FAUT surtout pas compter ce qu'il y a dans states_to_test
+
+    ########### MOUAIS MAIS FAUT AUSSI TESTER LA PUTAIN D ACTION BORDEL !!!!!!!!!!!!!!!
 
 
     while True:
+        print("IIIIIIIIIIIIIIIII")
+        # loaded_clustered_actions
+        # loaded_normal_actions
+        new_states, new_states_hashes = apply_actions(states_to_test, loaded_normal_actions, all_dfa_states_hashes, style="r_latplan")
 
-
-        print(len(states_tested))
-
-        # 
-        new_states, new_states_hashes = apply_actions(states_to_test, loaded_normal_actions, style="r_latplan")
-
-        print(len(new_states_hashes))
-        print(len(new_states))
-
-        exit()
-
-        # remove fr
-
+        # print("RESULTS: ")
+        # print(len(new_states_hashes))
+        # print()
+        # exit()
+        # UPDATE states_tested
         for s in new_states:
             # if s not in states_tested:
             if tuple(s.ravel()) not in states_tested_hashes:
                 states_tested.append(s)
                 states_tested_hashes.append(tuple(s.ravel()))
 
+        # states_to_test SHOULD be new_states MINUS states_to_test_formers
 
+        states_to_test_former_hashes = states_to_test_hashes.copy()
+
+        states_to_test_hashes = []
         states_to_test = []
-
-        print(new_states)
-
 
         #exit()
         for s in new_states:
-            print(tuple(s.ravel()))
 
-            if tuple(s.ravel()) not in states_tested_hashes:
-                print("was here")
+
+            if tuple(s.ravel()) not in states_to_test_former_hashes:
+
                 states_to_test.append(s)
                 states_to_test_hashes.append(tuple(s.ravel()))
 
 
+
         if len(states_to_test) == 0:
+            print("JUST BROKED")
             break
 
     print("states_tested_hashes !!!!")
     print(len(states_tested_hashes))
+    # for eeeeeeeee in states_tested_hashes:
+    #     print(eeeeeeeee)
     exit()
 
     for realcounter, both_states_and_ac in enumerate(loaded_dataset):
@@ -1228,6 +1284,485 @@ elif args.task == "test_coverage_on_full_dfa":
     # print("nber_preconds_sets_total_bis {}".format(str(nber_preconds_sets_total_bis)))
     exit()
 
+
+
+
+
+elif args.task == "gen_images_per_cluster":
+
+
+    path_to_dataset = data_folder + "/data.p"
+    loaded_data = load_dataset(path_to_dataset)
+    train_set_no_dupp_orig = loaded_data["train_set_no_dupp_orig"]
+    all_actions_unique = loaded_data["all_actions_unique"]
+
+
+
+    # DICO EACH LLA (key) AND ASSOCIATED PAIR OF IMAGES (value)
+    dico_transition_images_lla = {}
+
+    for ii, ele in enumerate(train_set_no_dupp_orig):
+
+        if np.argmax(ele[1]) not in dico_transition_images_lla:
+
+            dico_transition_images_lla[np.argmax(ele[1])] = ele[0]
+
+
+        # im1 = ele[0][0]
+        # im2 = ele[0][1]
+        # spacing = 10  # pixels of space between images
+        # height = im1.shape[0]
+        # if im1.dtype == np.uint8:
+        #     gray_value = 128
+        # else:
+        #     gray_value = 0.5
+        # blank = np.ones((height, spacing, im1.shape[2]), dtype=im1.dtype) * gray_value
+
+
+        # combined_image = np.hstack((im1, blank, im2))
+
+        # if np.argmax(ele[2]) == 21:
+        #     plt.imsave( "imagee_"+str(ii)+"__" + str(np.argmax(ele[2]))+"_.png", combined_image)
+        #     plt.close()
+
+        # if ii > 400:
+        #     exit()
+
+
+    if not os.path.exists(exp_folder+"/clusterings_images"):
+        os.makedirs(exp_folder+"/clusterings_images")
+
+
+
+    # GOING THROUGH EACH CLUSTER
+
+    num_hla = len(train_set_no_dupp_orig[0][-1])
+
+    for num_action in range(num_hla):
+
+        
+
+        #with open("clusterings/"+str(num_action)+"_clusters_True_both.txt", 'r') as ff:
+        with open(exp_folder+"/clusterings/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+".txt", 'r') as ff:
+
+            images_clusters_name = exp_folder+"/clusterings_images/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data
+
+            if not os.path.exists(images_clusters_name):
+                os.makedirs(images_clusters_name)
+
+            clusters = {}
+
+            # each line is a cluster (it has different integers, each is a lla ID)
+            for ijij, line in enumerate(ff):
+
+                #print("ijij is {}".format(str(ijij)))
+
+                #clusters[ijij] = {}
+                
+                arr = np.fromstring(line.strip(), sep=' ', dtype=int)        
+                print("ARR is {}".format(str(arr)))   
+                            
+
+
+                current_images_clusters_name = images_clusters_name + "/" + str(ijij)
+
+                if not os.path.exists(current_images_clusters_name):
+                    os.makedirs(current_images_clusters_name)
+
+                for lla_id in arr:
+
+                    im1 = dico_transition_images_lla[lla_id][0]
+                    im2 = dico_transition_images_lla[lla_id][1]
+
+                    spacing = 10  # pixels of space between images
+                    height = im1.shape[0]
+                    if im1.dtype == np.uint8:
+                        gray_value = 128
+                    else:
+                        gray_value = 0.5
+                    blank = np.ones((height, spacing, im1.shape[2]), dtype=im1.dtype) * gray_value
+
+
+                    combined_image = np.hstack((im1, blank, im2))
+
+                    plt.imsave(current_images_clusters_name + "/" + str(lla_id)+"_.png", combined_image)
+                    plt.close()
+
+
+
+    # 
+
+elif args.task == "debug":
+
+    file1 = exp_folder + "/" + "solutions_testing_paths_each_pair_domain.txt"
+
+    file2 = exp_folder + "/" + "solutions_testing_paths_each_pair_domainClustered_llas_True_only_effects_True.txt"
+
+
+    import numpy as np
+    import ast
+    import re
+
+    def load_weird_txt_as_dict(path):
+        with open(path, "r") as f:
+            content = f.read()
+        
+        # Safely evaluate with numpy types allowed
+        safe_globals = {
+            "np": np,
+            "array": np.array,
+            "int64": np.int64,
+            "__builtins__": {}
+        }
+
+        return eval(content, safe_globals)
+
+
+
+    dict1 = load_weird_txt_as_dict(file1)
+    dict2 = load_weird_txt_as_dict(file2)
+    print(type(dict1))  # should be <class 'dict'>
+
+    # # Compare keys
+    # only_in_dict1 = dict1.keys() - dict2.keys()
+    # only_in_dict2 = dict2.keys() - dict1.keys()
+
+    #([[], [], [c, b, a], []], d)__([[], [], [c, b, a, d], []], )
+
+    # # Output results
+    # print("Keys only in dict1:")
+    # for key in only_in_dict1:
+    #     print(f"{key}:\n{dict1[key]}\n")
+
+    # print("Keys only in dict2:")
+    # for key in only_in_dict2:
+    #     print(f"{key}:\n{dict2[key]}\n")
+
+
+
+
+    ##### create dico state / binary repr
+    dico_state_binary = {}
+
+    #### in data.p, all_actions_unique contains the name of each transitition, 
+    
+    # #### a+all_actions_unique.index(name_of_trans) is the name of the low level action
+
+    # path_to_dataset = data_folder + "/data.p"
+    # loaded_data = load_dataset(path_to_dataset)
+    # train_set_no_dupp = loaded_data["train_set_no_dupp_processed"]
+    # all_actions_unique = loaded_data["all_actions_unique"]
+
+
+    state1 = '([[], [], [c, b, a], []], d)'
+
+    state2 = '([[], [], [c, b, a, d], []], )'
+
+    loaded_dico_state_binary = load_dataset(exp_folder+"/"+"dico_state_binary.p")
+    print(loaded_dico_state_binary)
+
+    # print(loaded_dico_state_binary[state1])
+
+    # print(loaded_dico_state_binary[state2])
+
+
+    init_bin = loaded_dico_state_binary[state1]
+
+    goal_bin = loaded_dico_state_binary[state2]
+
+    bits = np.concatenate((init_bin, goal_bin))
+
+    ig  = exp_folder + "/" + "problem.ig"
+    problemfile = exp_folder + "/" + "problem.pddl"
+
+    np.savetxt(ig,[bits],"%d")
+
+    echodo(["helper/ama3-problem.sh", ig, problemfile])
+
+    #domain_file_name = "domainClustered_llas_True_only_effects_True.pddl"
+    domain_file_name = "domain.pddl"
+
+    #domain_file = exp_folder+"/"+"domainClustered_llas_True_only_effects_True.pddl"
+    domain_file = exp_folder+"/"+domain_file_name
+    planfile = exp_folder + "/" + "problem.plan"
+    #" --translate-options --invariant-generation-max-candidates 0 "
+
+    args_list = [
+        "--plan-file",
+        planfile,
+        domain_file,
+        problemfile,
+        "--search",
+        "astar(blind())",
+        "--translate-options",
+        "--invariant-generation-max-candidates",
+        "0"
+
+    ]
+
+    script_path = "downward/fast-downward.py"
+
+    result = subprocess.run(['python', script_path] + args_list, capture_output=True, text=True)
+
+    # Get the output text
+    output = result.stdout + result.stderr
+
+
+    
+
+
+
+
+    exit()
+
+    def get_size(x):
+        return 0 if x is None else x.size if isinstance(x, np.ndarray) else float('inf')
+
+    N = 50  # Set your threshold here
+
+    diff_keys = [
+        k for k in dict1
+        if (
+            k in dict2 and
+            not np.array_equal(dict1[k], dict2[k]) and
+            max(get_size(dict1[k]), get_size(dict2[k])) <= N
+        )
+    ]
+
+    print(diff_keys)
+
+    print(len(diff_keys))  # Output: ['b']
+
+
+elif args.task == "test_paths_each_pair":
+
+    dico_pair_path = {}
+
+    # I)  Form a Dict where key is node1__node2 and value is length of shortest path
+
+
+    # import networkx as nx
+
+    # path = ""
+    # if args.domain == "hanoi":
+    #     path = '/workspace/R-latplan/r_latplan_datasets/hanoi/Full-DFA-Hanoi_4_4.dot'
+    #     #path = '/workspace/R-latplan/r_latplan_datasets/hanoi/DFA_Hanoi_4_4__.dot'
+    # elif args.domain == "sokoban":
+    #     path = '/workspace/R-latplan/r_latplan_datasets/sokoban/Full_DFA_Sokoban_6_6.dot'
+    # elif args.domain == "blocks":
+    #     path = '/workspace/R-latplan/r_latplan_datasets/blocks/Full-DFA_blocks4Colors.dot'
+
+
+    # matplotlib.use("Agg") 
+
+    # G = nx.nx_agraph.read_dot(path)
+
+    # nodes = G.nodes()
+
+    # total_combis = len(nodes)*len(nodes)
+
+    # print("total_combis")
+    # print(total_combis) # 11449 (sokoban)
+
+    # # 66049 hanoi
+
+    # # blocks 15876
+
+    # counter = 0
+
+    # for n1 in nodes:
+
+    #     for n2 in nodes:
+
+    #         if n1 != n2 and n1 != "fake" and n2 != "fake":
+
+    #             dico_pair_path[str(n1)+"__"+str(n2)] = None
+
+    #             try:
+    #                 path_length = nx.shortest_path_length(G, n1, n2)
+                    
+    #                 if path_length > 1:
+    #                     dico_pair_path[str(n1)+"__"+str(n2)] = path_length
+
+    #             except nx.NetworkXNoPath:
+    #                 print(f"No path exists between {n1} and {n2}")
+
+    #         counter += 1
+
+    #         print("done: {} / {}".format(counter, total_combis))
+    
+
+    # # dico_pair_path
+    # filename = "dico_pair_path.p"
+    # with open(exp_folder+"/"+filename, mode="wb") as f:
+    #     pickle.dump(dico_pair_path, f)
+
+    # exit()
+
+    loaded_dico_pair_path = load_dataset(exp_folder+"/"+"dico_pair_path.p")
+    # exit()
+
+
+    # II)  From Each Transition in the dataset, retrieve for each unique state, the binary encoding
+    #        (form the dico_state_binary, of state/binary pairs)
+
+    # print(dico_pair_path)
+
+    ##### create dico state / binary repr
+    dico_state_binary = {}
+
+    ### in data.p, all_actions_unique contains the name of each transitition, 
+    
+    #### a+all_actions_unique.index(name_of_trans) is the name of the low level action
+
+    # path_to_dataset = data_folder + "/data.p"
+    # loaded_data = load_dataset(path_to_dataset)
+    # train_set_no_dupp = loaded_data["train_set_no_dupp_processed"]
+    # all_actions_unique = loaded_data["all_actions_unique"]
+
+
+    # import latplan
+    # sae = latplan.model.load(exp_folder,allow_failure=True)
+
+
+    # for ii, ele in enumerate(train_set_no_dupp):
+
+    #     lla_id = np.argmax(ele[1])
+
+    #     transition_string = all_actions_unique[lla_id]
+
+    #     print(transition_string)
+
+    #     first_state = transition_string.split("', '")[0][2:]
+    #     second_state = transition_string.split("', '")[1][:-2]
+
+
+    #     if first_state not in dico_state_binary:
+    #         state = sae.encode([ele[0][0]])[0].round().astype(int)
+    #         dico_state_binary[first_state] = state
+
+    #     if second_state not in dico_state_binary:
+    #         state = sae.encode([ele[0][1]])[0].round().astype(int)
+    #         dico_state_binary[second_state] = state
+    # print(dico_state_binary)
+
+
+    # filename = "dico_state_binary.p"
+    # with open(exp_folder+"/"+filename, mode="wb") as f:
+    #     pickle.dump(dico_state_binary, f)
+
+    # exit()
+
+    loaded_dico_state_binary = load_dataset(exp_folder+"/"+"dico_state_binary.p")
+
+
+    number_found_correct_plans = 0
+
+    dico_solutions = {}
+
+    nber_plans_per_length = {}
+
+    nber_total_pairs_to_test = len(loaded_dico_pair_path)
+
+    
+    ## III) for each paire of distinct nodes in the full DFA (for which there is at least 1-step plan !)
+    ##          create problem.pddl and use domain.pddl to test the problem, if exist add the solution to dico_solutions
+
+    for counter, (pair_str, length) in enumerate(loaded_dico_pair_path.items()):
+
+        if pair_str not in dico_solutions:
+            dico_solutions[pair_str] = None
+        else:
+            continue
+
+        print(" {} / {} , #plans found: {}".format(str(counter), str(nber_total_pairs_to_test), str(number_found_correct_plans)))
+
+        init_str = pair_str.split("__")[0]
+        goal_str = pair_str.split("__")[1]
+
+        init_bin = loaded_dico_state_binary[init_str]
+        goal_bin = loaded_dico_state_binary[goal_str]
+
+
+        bits = np.concatenate((init_bin, goal_bin))
+
+        ig  = exp_folder + "/" + "problem3.ig"
+        problemfile = exp_folder + "/" + "problem3.pddl"
+
+        np.savetxt(ig,[bits],"%d")
+
+        echodo(["helper/ama3-problem.sh", ig, problemfile])
+
+        #domain_file_name = "domainClustered_llas_by_same_effects.pddl"
+        domain_file_name = "domain.pddl"
+        #domain_file_name = "domainClustered_llas_by_same_effects.pddl"
+
+        #domain_file = exp_folder+"/"+"domainClustered_llas_True_only_effects_True.pddl"
+        domain_file = exp_folder+"/"+domain_file_name
+        planfile = exp_folder + "/" + "problem3.plan"
+        #" --translate-options --invariant-generation-max-candidates 0 "
+
+        args_list = [
+            "--plan-file",
+            planfile,
+            domain_file,
+            problemfile,
+            "--search",
+            "astar(blind())",
+            "--translate-options",
+            "--invariant-generation-max-candidates",
+            "0"
+
+        ]
+
+        script_path = "downward/fast-downward.py"
+
+        result = subprocess.run(['python', script_path] + args_list, capture_output=True, text=True)
+
+        # Get the output text
+        output = result.stdout + result.stderr
+
+
+        # Check for solution
+        if "Solution found." in output:
+
+            # Extract the number of steps
+            import re
+            match = re.search(r"Plan length: (\d+) step", output)
+
+            # if there is a number of steps (which there should be)
+            if match:
+
+                plan_length = int(match.group(1))
+
+                #### Generate the trace
+                tracefile = exp_folder + "/" + "problem3.trace"
+                csvfile = exp_folder + "/" + "problem3.csv"
+                echodo(["arrival", domain_file, problemfile, planfile, tracefile])
+                with open(csvfile,"w") as f:
+                    echodo(["lisp/ama3-read-latent-state-traces.bin", tracefile, str(len(init_bin))],
+                        stdout=f)
+                plan    = np.loadtxt(csvfile, dtype=int)
+
+                # if there is a plan of at least 1 step
+                if isinstance(plan, np.ndarray) and plan_length >= 1:
+                    dico_solutions[pair_str] = plan
+
+            number_found_correct_plans += 1
+
+
+    with open(exp_folder+"/"+"solutions_testing_paths_each_pair_"+domain_file_name[:-5]+"__LAST_with_TEST2_Constraint.txt", 'w') as file:
+        file.write(str(dico_solutions))
+        # file.write("\n")
+        # file.write("nbre total paths found" + str(number_found_correct_plans))
+
+
+    # IV) There should be the same number of solutions in dico_solutions as the size of loaded_dico_pair_path
+
+    exit()
+
+
+
 elif args.task == "gen_plans":
 
     ### from the domain PDDL generated 
@@ -1253,14 +1788,14 @@ elif args.task == "gen_plans":
 
 
         
-        #domain_file = "domain.pddl"
+        domain_file = "domain.pddl"
         #domain_file = "domain_ORIGINAL.pddl"
         #domain_file = "domainCondBIS.pddl"
         #domain_file = "THENEWDOMAINBIS.pddl"
         #domain_file = "domainClustered_VeryHigh.pddl"
         #domain_file = "domainClustered_llas_True_only_effects_speWhens.pddl"
-        #domain_file = "domainClustered_llas_True_only_effects.pddl"
-        domain_file = "domainClustered_llas_True_only_effects_True.pddl"
+        #domain_file = "domainClustered_llas_by_same_effects.pddl"
+        #domain_file = "domainClustered_llas_True_only_effects_True.pddl"
 
 
         if not "partial" in args.dataset_folder:
@@ -1323,6 +1858,9 @@ elif args.task == "gen_plans":
                 exp_folder: None,
                 "blind": None,
                 "1": None,
+                "--translate-options": None,
+                "--invariant-generation-max-candidates": None,
+                "0": None
 
             }
 
@@ -1350,13 +1888,3 @@ elif args.task == "gen_plans":
 
 
 
-
-
-# in input
-
-# directory of the exp
-
-# 1) gen the pddl from the best weights
-
-
-# 2) 

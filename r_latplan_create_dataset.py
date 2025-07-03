@@ -139,18 +139,27 @@ def load_dataset(path_to_file):
 
 if args.task == "cut":
 
-    print("dataset_exp_dir") # /workspace/R-latplan/r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI
-    print(dataset_exp_dir)
+
 
     
+    dataset_exp_dir = dataset_exp_dir + "_N25"
+    
+    exp_exp_dir = exp_exp_dir + "_N25"
+
+    print("dataset_exp_dir") # /workspace/R-latplan/r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI
+    print(dataset_exp_dir)
     print("exp_exp_dir") # /workspace/R-latplan/r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI
     print(exp_exp_dir)
+
 
     print("trace_dir") # /workspace/R-latplan/r_latplan_datasets/hanoi
     print(trace_dir)
 
     # 0) locate the data.p (if not seen, return)
     if not os.path.exists(dataset_exp_dir + "/" + "data.p"):
+        
+        print("ffffffffff")
+        print(dataset_exp_dir)
         print("File DOES NOT exists")
         exit()
     

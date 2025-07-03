@@ -965,7 +965,7 @@ def run(path,transitions,extra=None):
     path_to_dataset = dataset_aux_json_folder_exp +"/data.p"
 
 
-    path_to_dataset = dataset_aux_json_folder_exp +"/dataPartialLast.p"
+    #path_to_dataset = dataset_aux_json_folder_exp +"/dataPartialLast.p"
 
 
     # r_latplan_datasets/hanoi/hanoi_complete_clean_faultless_withoutTI/data.p
@@ -2414,8 +2414,8 @@ def run(path,transitions,extra=None):
         #### FAUT QUE TU UTILISE LE MEME JSON QUE QUAND TU TRAINE 
 
 
-        data['parameters']['N'] = 16
-        parameters["N"] = 16
+        data['parameters']['N'] = 25
+        parameters["N"] = 25
         print(args)
         print("HGTFRDEA!!!!!")
         # prob ici c'est que ça load 
