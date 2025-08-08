@@ -6,7 +6,7 @@ import numpy as np
 import h5py
 import latplan.util.stacktrace
 from latplan.util.tuning import simple_genetic_search, parameters, nn_task, reproduce, load_history
-from latplan.util        import curry
+from latplan.util import curry
 import sys
 import json
 import random
@@ -121,7 +121,17 @@ def add_common_arguments(subparser,task,objs=False):
                            nargs='?',
                            default="",
                            help="if vanilla or r_latplan")
+
+    subparser.add_argument("--action_id",
+                           nargs='?',
+                           default="",
+                           help="which high lvl action id to train on",
+                           required = False
+                           )
     
+
+    
+
     return
 
 
@@ -2414,8 +2424,8 @@ def run(path,transitions,extra=None):
         #### FAUT QUE TU UTILISE LE MEME JSON QUE QUAND TU TRAINE 
 
 
-        data['parameters']['N'] = 25
-        parameters["N"] = 25
+        data['parameters']['N'] = 50
+        parameters["N"] = 50
         print(args)
         print("HGTFRDEA!!!!!")
         # prob ici c'est que ça load 
@@ -2502,6 +2512,35 @@ def run(path,transitions,extra=None):
 
     if 'learn' in args.mode:
 
+
+
+
+
+        if args.action_id != "" and args.action_id != None:
+
+            print("train_set")
+            print(len(train_set[0]))
+
+            #all_pairs_of_images_processed_gaussian20[i], all_actions_one_hot[i], all_high_lvl_actions_one_hot[i]
+            train_set_one_action = []
+            val_set_one_action = []
+
+            for sample in train_set:
+                if np.argmax(sample[-1]) == int(args.action_id):
+                    sample[1] = np.array([1])
+                    train_set_one_action.append(sample)
+            
+            for sample in val_set:
+                if np.argmax(sample[-1]) == int(args.action_id):
+                    sample[1] = np.array([1])
+                    val_set_one_action.append(sample)
+
+
+            train_set = train_set_one_action
+            val_set = val_set_one_action
+
+
+
         import wandb
         
         wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
@@ -2548,6 +2587,10 @@ def run(path,transitions,extra=None):
             data["input_shape"] = aaa
 
 
+        # action_id
+
+        parameters["action_id"] = args.action_id
+
         parameters["epoch"] = 10000
 
         parameters["load_sae_weights"] = False
@@ -2559,8 +2602,8 @@ def run(path,transitions,extra=None):
         # parameters["beta_z_and_beta_d"] = [10, 1000]
         # parameters["N"] = 300
         parameters["beta_z_and_beta_d"] = [1, 100]
-        parameters["N"] = 16 #25
-        data['parameters']["N"] = 16 #25
+        parameters["N"] = 50 #25
+        data['parameters']["N"] = 50 #25
         # parameters["pdiff_z1z2_z0z3"] = 0
         parameters["type"] = args.type
         data['parameters']["type"] = args.type
@@ -2581,21 +2624,23 @@ def run(path,transitions,extra=None):
             json.dump(data, f, indent=4)
 
 
-        
+
+
+
         ########################################  NORMAL TRAINING ########################################
 
         # import wandb
         # wandb.login(key="2eec5f6bab880cdbda5c825881bbd45b4b3819d9")
-        parameters["use_wandb"] = False
-        #with wandb.init(project="my-Latplan", group="SinglerunsHANOI", name="R-Latplan-N16-HANOI-final", resume=False):
+        parameters["use_wandb"] = True
+        with wandb.init(project="my-Latplan", group="SinglerunsHANOI", name="R-Latplan-N50-HANOI-OneAction", resume=False):
 
-        if args.type == "vanilla":
-            task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
-            task()
-        else:
+            if args.type == "vanilla":
+                task = curry(nn_task, latplan.modelVanilla.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+                task()
+            else:
 
-            task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
-            task()
+                task = curry(nn_task, latplan.model.get(parameters["aeclass"]), exp_aux_json_folder, train_set, train_set, val_set, val_set, parameters, False) 
+                task()
 
     
 

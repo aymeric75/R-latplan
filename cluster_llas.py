@@ -277,7 +277,6 @@ for ii, ele in enumerate(train_set_no_dupp):
         dico_lowlvl_highlvl[np.argmax(ele[1])] = np.argmax(ele[2])
 
 
-
 dico_highlvlid_lowlvlactions = {}
 
 #domainfile="domain_ORIGINAL_NO_DUPP.pddl"
@@ -313,9 +312,21 @@ try:
 
             low_lvl_name_clean = act.name.split("-")[0].split("+")[0]
 
-            #highlvlid = dico_lowlvl_highlvl[trans_id]
-            # print("low_lvl_name_clean")
+
+            # print("act.name")
+            # print(act.name)
+            # print("low_lvl_name_cleanlow_lvl_name_clean")
             # print(low_lvl_name_clean)
+            # print(low_lvl_name_clean[1:])
+            # exit()
+            # low_lvl_name_clean is the PDDL id  (from R-latplan)
+
+            # highlvlid is the high lvl id
+
+            # trans_id is just another id for low level actions, but 
+            # which follows the numerical order from range 0 to #pddl actions
+
+
             highlvlid = dico_lowlvl_highlvl[int(low_lvl_name_clean[1:])]
 
             # print(highlvlid)
@@ -324,17 +335,37 @@ try:
             if highlvlid not in dico_highlvlid_lowlvlactions:
                 dico_highlvlid_lowlvlactions[highlvlid] = {}
 
-            if trans_id not in dico_highlvlid_lowlvlactions[highlvlid]:
-                dico_highlvlid_lowlvlactions[highlvlid][trans_id] = {"preconds": [], "effects": []}
+
+            ##### CASE WHERE we DO the clusterings for then building the clustered PDDL 
+
+            # if trans_id not in dico_highlvlid_lowlvlactions[highlvlid]:
+            #     dico_highlvlid_lowlvlactions[highlvlid][trans_id] = {"preconds": [], "effects": []}
+
+
+            # for precond in list(act.precondition.parts):
+            #     f_name_precond = friendly_name(precond)
+            #     dico_highlvlid_lowlvlactions[highlvlid][trans_id]["preconds"].append(f_name_precond)
+
+            # for eff in act.effects:
+            #     f_name_eff = friendly_name(eff.literal)
+            #     dico_highlvlid_lowlvlactions[highlvlid][trans_id]["effects"].append(f_name_eff)
+
+
+            ##### CASE WHERE we need the real ID of the low level actions
+            if low_lvl_name_clean not in dico_highlvlid_lowlvlactions[highlvlid]:
+                dico_highlvlid_lowlvlactions[highlvlid][low_lvl_name_clean] = {"preconds": [], "effects": []}
 
 
             for precond in list(act.precondition.parts):
                 f_name_precond = friendly_name(precond)
-                dico_highlvlid_lowlvlactions[highlvlid][trans_id]["preconds"].append(f_name_precond)
+                dico_highlvlid_lowlvlactions[highlvlid][low_lvl_name_clean]["preconds"].append(f_name_precond)
 
             for eff in act.effects:
                 f_name_eff = friendly_name(eff.literal)
-                dico_highlvlid_lowlvlactions[highlvlid][trans_id]["effects"].append(f_name_eff)
+                dico_highlvlid_lowlvlactions[highlvlid][low_lvl_name_clean]["effects"].append(f_name_eff)
+
+
+
             # friendly_name
             cc_normal_actions += 1
 
@@ -343,6 +374,8 @@ finally:
     sys.path.pop(0)
 
 two_tabs_space  = "         "
+
+
 
 # dico_highlvlid_lowlvlactions 
 
@@ -381,12 +414,15 @@ for num_action in range(0, nber_hlas):
 
     last_current_time = time.time()
 
+    mapping_tmp_true = {}
+
     S = []
     E = [] 
     U_pre = []
 
 
     for thecounter, (lowlvlkey, dico_vals) in enumerate(dico_highlvlid_lowlvlactions[num_action].items()):
+        mapping_tmp_true[thecounter] = lowlvlkey
         S.append(dico_vals["preconds"])
         E.append(dico_vals["effects"])
         for atom in dico_vals["preconds"]:
@@ -480,14 +516,27 @@ for num_action in range(0, nber_hlas):
                 # in this case, 
                 groups = group_identical_rows(vvv)
    
+                print("groups")
+                print(groups)
+
+                real_groups = []
+                for g in groups:
+                    real_groups.append([])
+                    for ellll in g:
+                        real_groups[-1].append(int(mapping_tmp_true[ellll][1:]))
+                    
+
+
                 total_groups_count += len(groups)
 
                 # donc
 
-
+                # 
+                
 
                 with open(base_dir+"/clusterings/"+str(num_action)+"_clusters_by_same_effects.txt", 'w') as fff1:
-                    for value in groups:
+                    #for value in groups:
+                    for value in real_groups:
                         fff1.write(' '.join(map(str, value)) + '\n')
 
             else:

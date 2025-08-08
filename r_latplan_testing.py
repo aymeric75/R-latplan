@@ -78,9 +78,6 @@ def copy_and_rename_files(directory, specific_number, destination_directory):
 
 
 
-
-
-
 parser = argparse.ArgumentParser(description="A script to test R-latplan for a specific experiment")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='type of task to be performed')
 parser.add_argument(
@@ -1343,10 +1340,12 @@ elif args.task == "gen_images_per_cluster":
         
 
         #with open("clusterings/"+str(num_action)+"_clusters_True_both.txt", 'r') as ff:
-        with open(exp_folder+"/clusterings/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+".txt", 'r') as ff:
+        #with open(exp_folder+"/clusterings/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data+".txt", 'r') as ff:
+        with open(exp_folder+"/clusterings/"+str(num_action)+"_clusters_by_same_effects.txt", 'r') as ff:
 
-            images_clusters_name = exp_folder+"/clusterings_images/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data
-
+            #images_clusters_name = exp_folder+"/clusterings_images/"+str(num_action)+"_clusters_"+str(args.clustering_with_penalty)+"_"+args.clustering_base_data
+            images_clusters_name = exp_folder+"/clusterings_images/"+str(num_action)+"_clusters_by_same_effects"
+            
             if not os.path.exists(images_clusters_name):
                 os.makedirs(images_clusters_name)
 
@@ -1384,6 +1383,7 @@ elif args.task == "gen_images_per_cluster":
 
 
                     combined_image = np.hstack((im1, blank, im2))
+
 
                     plt.imsave(current_images_clusters_name + "/" + str(lla_id)+"_.png", combined_image)
                     plt.close()

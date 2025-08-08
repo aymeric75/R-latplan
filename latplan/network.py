@@ -13,8 +13,11 @@ import os.path
 import random
 import matplotlib.pyplot as plt
 import wandb
+import h5py
 # modified version
 import progressbar
+
+
 class DynamicMessage(progressbar.DynamicMessage):
     def __call__(self, progress, data):
         val = data['dynamic_messages'][self.name]
@@ -368,9 +371,27 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
 
         the_exp_path = self.parameters["the_exp_path"]
 
+
+        print("the_exp_path")
+        print(the_exp_path) # r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI
+
+
+        if self.parameters["type"] == "vanilla":
+            input_shape = val_data.shape[1:]
+            #input_shape = 
+            image_shape = input_shape[1:]
+        else:
+
+            image_shape = val_data[0][0][0].shape
+            input_shape = [2]
+            input_shape.extend(image_shape)
+            input_shape = tuple(input_shape)
+
         if resume:
             print("resuming the training")
             self.load(allow_failure=False, path="logs/"+self.parameters["resume_from"])
+
+
         else:
             #input_shape = train_data.shape[1:]
             #input_shape = (2, 57, 158, 3)
@@ -380,26 +401,17 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             # print(val_data.shape)
             # print(val_data.shape[1:])
 
-            if self.parameters["type"] == "vanilla":
-                input_shape = val_data.shape[1:]
-                #input_shape = 
-                image_shape = input_shape[1:]
-            else:
-
-                image_shape = val_data[0][0][0].shape
-                input_shape = [2]
-                input_shape.extend(image_shape)
-                input_shape = tuple(input_shape)
-
-
-            
-            # print("input_shapeinput_shape")
-            # print(input_shape)
-            # exit()
 
             self.build(input_shape)
             self.build_aux(input_shape)
 
+
+        # r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI/logs/fullDesc-No-Noise/net0.h5
+        
+        if self.parameters["action_id"] != "" and self.parameters["action_id"] != None:
+            self.nets[0].load_weights(the_exp_path + "/net0.h5", by_name=True, skip_mismatch=True)
+        
+        
         epoch      = self.parameters["epoch"]
         batch_size = self.parameters["batch_size"]
         optimizer  = self.parameters["optimizer"]
@@ -428,7 +440,40 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             )
 
         self.optimizers = list(map(make_optimizer, self.nets))
+
+        liste_of_layers_to_freeze = [
+            # Encoder layers with weights
+            "batch_normalization_2", "conv2d_1", "batch_normalization_3", "conv2d_2", "batch_normalization_4", "dense_5",
+            # Decoder layers with weights
+            "batch_normalization_5", "dense_6", "batch_normalization_6", "conv2d_transpose_1", "batch_normalization_7", "conv2d_transpose_2" 
+        ]
+
+
+        if self.parameters["action_id"] != "" and self.parameters["action_id"] != None:
+
+            for layer_name in liste_of_layers_to_freeze:
+                self.nets[0].get_layer(layer_name).trainable = False
+
+   
+
         self.compile(self.optimizers)
+
+        
+
+        if self.parameters["action_id"] != "" and self.parameters["action_id"] != None:
+                
+            from tensorflow.keras.initializers import VarianceScaling
+
+
+            # Xavier (Glorot) initializer
+            xavier = VarianceScaling(scale=1.0, mode='fan_avg', distribution='uniform')
+
+            # reinit kernel
+            self.nets[0].get_layer("dense_5").kernel.assign(xavier(shape=self.nets[0].get_layer("dense_5").kernel.shape))
+
+            # reinit bias (optional)
+            self.nets[0].get_layer("dense_5").bias.assign(tf.zeros_like(self.nets[0].get_layer("dense_5").bias))
+
 
         if val_data     is None:
             val_data     = train_data
@@ -559,12 +604,11 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             actions_array = np.array(actions_array)
 
 
-
-            liste_masks = []
-            for iiii in range(22):
-                tmp_mask = actions_array[:, iiii] == 1
-                liste_masks.append(tmp_mask)
-            args = tuple(liste_masks)
+            # liste_masks = []
+            # for iiii in range(22):
+            #     tmp_mask = actions_array[:, iiii] == 1
+            #     liste_masks.append(tmp_mask)
+            # args = tuple(liste_masks)
 
 
 
@@ -645,7 +689,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             #if forwandb:
             to_send_towandb = logs_net
             to_send_towandb["epoch"] = epoch
-            #wandb.log(to_send_towandb)
+            wandb.log(to_send_towandb)
 
             losses.append(logs_net["loss"])
             logs.update(logs_net)
@@ -779,12 +823,10 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
                         #     ones,
                         #     theepoch,
                         #     *args], [x_data, zerossss])
-                                            
+       
                         net.train_on_batch([x_data, 
                                             action_input_data, 
                                             ], x_data)
-                                            
-
 
                     
                     logs = {}
@@ -812,7 +854,7 @@ Poor python coders cannot enjoy the cleanness of CLOS :before, :after, :around m
             except KeyboardInterrupt:
                 print("learning stopped\n")
             finally:
-                self.save(epoch=epoch)
+                self.save(path = the_exp_path, epoch=epoch)
                 self.loaded = True
             return self
 

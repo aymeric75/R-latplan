@@ -15,6 +15,7 @@ parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if
 parser.add_argument('domain', type=str, choices=['hanoi', 'blocks', 'sokoban'], help='domain name')
 parser.add_argument('dataset_folder', type=str, help='folder where the images are')
 parser.add_argument('--pb_folder', default="", type=str, help='REQUIRED for PARTIAL', required=False)
+parser.add_argument('--action_id', default="", type=str, help='CHOOSE HLA ID to be trained (only for last version of R-latplan)', required=False)
 
 args = parser.parse_args()
 
@@ -117,6 +118,7 @@ args_dict = {
     "kltune": None,
     "--dataset_folder": dataset_fold,
     "--type": args.type,
+    "--action_id": args.action_id
 }
 
 # Convert the dictionary to a list of arguments

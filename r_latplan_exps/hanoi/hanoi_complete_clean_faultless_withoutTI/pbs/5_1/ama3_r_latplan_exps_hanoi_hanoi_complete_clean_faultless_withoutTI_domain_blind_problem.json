@@ -11,98 +11,98 @@
     },
     {
       "message": "loaded puzzle",
-      "wall": 0.8367645740509033,
-      "elapsed": 0.8367645740509033
+      "wall": 0.8405308723449707,
+      "elapsed": 0.8405308723449707
     },
     {
       "message": "loaded sae",
-      "wall": 4.998079776763916,
-      "elapsed": 4.161315202713013
+      "wall": 5.805095434188843,
+      "elapsed": 4.964564561843872
     },
     {
       "message": "loaded puzzle",
-      "wall": 4.998284339904785,
-      "elapsed": 0.00020456314086914062
+      "wall": 5.805314302444458,
+      "elapsed": 0.00021886825561523438
     },
     {
       "message": "loading init/goal",
-      "wall": 4.998347043991089,
-      "elapsed": 6.270408630371094e-05
+      "wall": 5.805324077606201,
+      "elapsed": 9.775161743164062e-06
     },
     {
       "message": "loaded init/goal",
-      "wall": 5.899129152297974,
-      "elapsed": 0.9007821083068848
+      "wall": 7.479100942611694,
+      "elapsed": 1.6737768650054932
     },
     {
       "message": "start planning",
-      "wall": 5.899142026901245,
-      "elapsed": 1.2874603271484375e-05
+      "wall": 7.479117155075073,
+      "elapsed": 1.621246337890625e-05
     },
     {
       "message": "start generating problem",
-      "wall": 5.899266719818115,
-      "elapsed": 0.0001246929168701172
+      "wall": 7.479252576828003,
+      "elapsed": 0.0001354217529296875
     },
     {
       "message": "finished generating problem",
-      "wall": 6.019653558731079,
-      "elapsed": 0.12038683891296387
+      "wall": 7.610658884048462,
+      "elapsed": 0.13140630722045898
     },
     {
       "message": "start planning",
-      "wall": 6.403060436248779,
-      "elapsed": 0.3834068775177002
+      "wall": 10.027661561965942,
+      "elapsed": 2.4170026779174805
     },
     {
       "message": "finished planning",
-      "wall": 7.290379762649536,
-      "elapsed": 0.8873193264007568
+      "wall": 43.191585063934326,
+      "elapsed": 33.163923501968384
     },
     {
       "message": "start running a validator",
-      "wall": 7.290433883666992,
-      "elapsed": 5.412101745605469e-05
+      "wall": 43.191670179367065,
+      "elapsed": 8.511543273925781e-05
     },
     {
       "message": "finished running a validator",
-      "wall": 7.593813419342041,
-      "elapsed": 0.30337953567504883
+      "wall": 43.541545391082764,
+      "elapsed": 0.34987521171569824
     },
     {
       "message": "start parsing the plan",
-      "wall": 7.59386944770813,
-      "elapsed": 5.602836608886719e-05
+      "wall": 43.54162240028381,
+      "elapsed": 7.700920104980469e-05
     },
     {
       "message": "finished parsing the plan",
-      "wall": 7.678974151611328,
-      "elapsed": 0.08510470390319824
+      "wall": 43.6578803062439,
+      "elapsed": 0.11625790596008301
     },
     {
       "message": "start plotting the plan",
-      "wall": 7.679009199142456,
-      "elapsed": 3.504753112792969e-05
+      "wall": 43.657933950424194,
+      "elapsed": 5.364418029785156e-05
     },
     {
       "message": "finished plotting the plan",
-      "wall": 7.829603672027588,
-      "elapsed": 0.15059447288513184
+      "wall": 43.86450242996216,
+      "elapsed": 0.20656847953796387
     },
     {
       "message": "start archiving the plan",
-      "wall": 7.829659461975098,
-      "elapsed": 5.5789947509765625e-05
+      "wall": 43.86454510688782,
+      "elapsed": 4.267692565917969e-05
     },
     {
       "message": "finished archiving the plan",
-      "wall": 7.854026794433594,
-      "elapsed": 0.024367332458496094
+      "wall": 43.87500715255737,
+      "elapsed": 0.010462045669555664
     },
     {
       "message": "start visually validating the plan image : transitions",
-      "wall": 7.8540802001953125,
-      "elapsed": 5.340576171875e-05
+      "wall": 43.875035762786865,
+      "elapsed": 2.86102294921875e-05
     }
   ],
   "heuristics": "blind",
@@ -131,7 +131,7 @@
     "clipnorm": 0.1,
     "batch_size": 400,
     "lr": 0.001,
-    "N": 16,
+    "N": 50,
     "zerosuppress": 0.1,
     "densify": false,
     "max_temperature": 5.0,
@@ -179,6 +179,7 @@
       1,
       1000
     ],
+    "action_id": null,
     "the_exp_path": "r_latplan_exps/hanoi/hanoi_complete_clean_faultless_withoutTI",
     "type": "r_latplan",
     "newloss_starting_epoch__AND__newloss_ending_epoch": [

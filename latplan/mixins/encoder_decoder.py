@@ -36,7 +36,13 @@ class EncoderDecoderMixin:
             from keras.callbacks import LambdaCallback
             self.callbacks.append(LambdaCallback(on_epoch_end=self.output.update))
         self.encoder_net = self.build_encoder(state_input_shape)
+
         self.decoder_net = self.build_decoder(state_input_shape)
+
+        # print("self.decoder_net.decoder_net.decoder_net")
+        # print(self.decoder_net)
+        # exit()
+
         super()._build_around(state_input_shape)
         return
     def _encode(self,x):

@@ -14,6 +14,7 @@ def switch_conda_environment(env_name):
     print(f"Switched to conda environment: {env_name}")
 
 
+
 parser = argparse.ArgumentParser(description="A script to create the R-latplan datasets")
 parser.add_argument('type', type=str, choices=['r_latplan', 'vanilla'], help='if vanilla or r-latplan')
 parser.add_argument('task', type=str, choices=['cut', 'create_clean_traces', 'create_exp_data_sym', 'create_exp_data_im'], help='type of task to be performed')
