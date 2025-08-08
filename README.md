@@ -75,7 +75,7 @@ The figure below reports the **% of successful executions** (maximum success = 3
 - **Solid lines**: R-Latplan  
 - **Dashed lines**: Vanilla Latplan
 
-✅ R-Latplan maintains near-perfect execution, even with noise.  
+✅ R-Latplan maintains perfect execution, even with noise.  
 ❌ Vanilla Latplan struggles on long plans and under noisy conditions.
 
 ---
